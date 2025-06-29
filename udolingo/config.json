@@ -1,0 +1,104 @@
+{
+    "lessons": [
+        {
+            "prompt": "Had she known the truth, she would have acted differently.",
+            "solution": "Se ela soubesse a verdade, teria agido de forma diferente.",
+            "distractors": "soubessem soubesseis agir"
+        },
+        {
+            "prompt": "He had scarcely arrived when the storm broke.",
+            "solution": "Mal ele havia chegado quando a tempestade irrompeu.",
+            "distractors": "malhar chegadoes tempestivamente"
+        },
+        {
+            "prompt": "Were it not for the ongoing strikes, the economy would be thriving.",
+            "solution": "Não fossem as greves em curso, a economia estaria a prosperar.",
+            "distractors": "fossemos grevistas prosperado"
+        },
+        {
+            "prompt": "She wishes she hadn't given up on her dreams so easily.",
+            "solution": "Ela queria não ter desistido dos seus sonhos tão facilmente.",
+            "distractors": "queriam desisti fácil"
+        },
+        {
+            "prompt": "They might have been planning a surprise, had we not interfered.",
+            "solution": "Eles poderiam ter estado a planear uma surpresa, não tivéssemos nós interferido.",
+            "distractors": "poderiam planejar interferimos"
+        },
+        {
+            "prompt": "Lest he forget, remind him of the meeting.",
+            "solution": "Para que ele não se esqueça, lembre-o da reunião.",
+            "distractors": "esquecer esqueçam lembra"
+        },
+        {
+            "prompt": "No sooner had I shut my eyes than the phone rang.",
+            "solution": "Assim que fechei os olhos, o telefone tocou.",
+            "distractors": "assimilar toques feches"
+        },
+        {
+            "prompt": "But for your timely intervention, the project would have failed.",
+            "solution": "Se não fosse a sua intervenção oportuna, o projeto teria falhado.",
+            "distractors": "fosseis oportunos falhariam"
+        },
+        {
+            "prompt": "It's high time they addressed the underlying issues.",
+            "solution": "Já é mais do que tempo de eles abordarem as questões subjacentes.",
+            "distractors": "abordar questõesse submeterem"
+        },
+        {
+            "prompt": "Seldom do we encounter such profound insights.",
+            "solution": "Raramente nos deparamos com tais percepções profundas.",
+            "distractors": "deparas profundo profundas"
+        },
+        {
+            "prompt": "Por mais que chova, o campo continua seco.",
+            "solution": "However much it rains, the field remains dry.",
+            "distractors": "howevered rained dried"
+        },
+        {
+            "prompt": "Oxalá ele tivesse vindo à festa.",
+            "solution": "If only he had come to the party.",
+            "distractors": "only coming partied"
+        },
+        {
+            "prompt": "Ao passo que ele se esforçava, ela desistia.",
+            "solution": "While he strove, she gave up.",
+            "distractors": "strives giving gaveup"
+        },
+        {
+            "prompt": "Não obstante a sua promessa, ele não apareceu.",
+            "solution": "Notwithstanding his promise, he didn't show up.",
+            "distractors": "notwithstandingly promised shown"
+        },
+        {
+            "prompt": "Prouvera a Deus que a verdade fosse revelada.",
+            "solution": "Would to God the truth were revealed.",
+            "distractors": "wouldst truthful revealing"
+        },
+        {
+            "prompt": "Ele agiu como se nada tivesse acontecido, mas era evidente a sua perturbação.",
+            "solution": "He acted as if nothing had happened, but his disturbance was evident.",
+            "distractors": "happenings disturbingly evidenced"
+        },
+        {
+            "prompt": "Porventura, encontrar-se-á uma solução para o dilema.",
+            "solution": "Perhaps, a solution to the dilemma will be found.",
+            "distractors": "possibly finding solving"
+        },
+        {
+            "prompt": "Seja como for, a decisão já foi tomada.",
+            "solution": "Be that as it may, the decision has already been made.",
+            "distractors": "being making decided"
+        },
+        {
+            "prompt": "Deveras, a situação é mais complexa do que aparenta.",
+            "solution": "Indeed, the situation is more complex than it appears.",
+            "distractors": "indubitably situations appeared"
+        },
+        {
+            "prompt": "Mister se faz que todos colaborem para o sucesso do projeto.",
+            "solution": "It is necessary that everyone collaborates for the project's success.",
+            "distractors": "necessitates everyone's successful"
+        }
+    ]
+}

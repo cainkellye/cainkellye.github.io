@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson Configuration Template</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border: 1px solid #ddd;
+            overflow: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Lesson Configuration Template</h1>
+    <p>This template describes the structure of a lesson configuration JSON file. Each lesson includes a prompt, a correct translation (solution), and distractors. The distractors are space-separated strings, containing words similar in meaning or sounding to the words in the solution.</p>
+    
+    <h2>Template Structure</h2>
+    <pre>
+{
+    "lessons": [
+        {
+            "prompt": "Original sentence to translate",
+            "solution": "Correct translation of the prompt",
+            "distractors": "distractor1 distractor2 distractor3"
+        },
+        {
+            "prompt": "Another translation practice",
+            "solution": "Correct translation of the prompt",
+            "distractors": "distractorA distractorB distractorC"
+        }
+        // Add more lessons as needed
+    ]
+}
+    </pre>
+    
+    <h2>Example</h2>
+    <pre>
+{
+    "lessons": [
+        {
+            "prompt": "He runs every morning.",
+            "solution": "Er läuft jeden Morgen",
+            "distractors": "geht Abend Nacht"
+        },
+        {
+            "prompt": "Where is the nearest hospital?",
+            "solution": "Wo ist das nächste Krankenhaus?",
+            "distractors": "Klinik Notfall Zentrum"
+        },
+        {
+            "prompt": "I can't hear you.",
+            "solution": "Ich kann dich nicht hören",
+            "distractors": "sehen sprechen fühlen"
+        }
+        // Add more lessons as needed
+    ]
+}
+    </pre>
+    
+    <p>Copy the template structure above and replace the placeholders with your own prompts, solutions, and distractors to generate new lessons using an LLM.</p>
+</body>
+</html>

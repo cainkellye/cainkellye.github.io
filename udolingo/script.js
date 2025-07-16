@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const task = lessons[index];
         promptEl.textContent = `Translate this: "${task.prompt}"`;
 
-        const words = removeExactDuplicates(splitSentence(task.solution + ' ' + task.distractors));
+        const words = removeExactDuplicates(splitSentenceWithoutPunctuation(task.solution + ' ' + task.distractors));
         shuffleArray(words);
 
         wordBankContainerEl.innerHTML = '';
@@ -71,8 +71,12 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/[.,!?¿¡—–\()"“”‘’]/g, '')
     }
 
+    function splitSentenceWithoutPunctuation(sentence) {
+        return splitSentence(removePunctuation(sentence));
+    }
+
     function splitSentence(sentence) {
-        return removePunctuation(sentence)
+        return sentence
             .split(/\s+/)
             .filter(Boolean); // remove empty strings
     }
@@ -100,13 +104,47 @@ document.addEventListener('DOMContentLoaded', () => {
         const userResponse = responseContainerEl.textContent.trim();
         const solution = removePunctuation(lessons[currentTaskIndex].solution);
 
+        // If the user response exactly matches the solution, mark as correct.
         if (userResponse === solution) {
             feedbackEl.textContent = 'Correct!';
             feedbackEl.style.color = 'green';
-        } else {
-            feedbackEl.textContent = 'Incorrect. The correct answer is: "' + solution + '"';
-            feedbackEl.style.color = 'red';
+            return;
         }
+
+        // Use splitSentence to compare word by word
+        const userWords = splitSentenceWithoutPunctuation(userResponse);
+        const solWords = splitSentenceWithoutPunctuation(solution);
+        const solWordsOriginal = splitSentence(solution);
+
+        // Find the common prefix.
+        let prefixCount = 0;
+        while (
+            prefixCount < userWords.length &&
+            prefixCount < solWords.length &&
+            userWords[prefixCount] === solWords[prefixCount]
+        ) {
+            prefixCount++;
+        }
+
+        // Find the common suffix.
+        let suffixCount = 0;
+        while (
+            suffixCount < (solWords.length - prefixCount) &&
+            suffixCount < (userWords.length - prefixCount) &&
+            userWords[userWords.length - 1 - suffixCount] === solWords[solWords.length - 1 - suffixCount]
+        ) {
+            suffixCount++;
+        }
+
+        const prefixText = solWordsOriginal.slice(0, prefixCount).join(' ');
+        const mismatchText = solWordsOriginal.slice(prefixCount, solWords.length - suffixCount).join(' ');
+        const suffixText = solWordsOriginal.slice(solWords.length - suffixCount).join(' ');
+
+        // Build the feedback with inline spans.
+        feedbackEl.innerHTML = 'Incorrect. The correct answer is: "' + 
+            (prefixText ? '<span style="color:black;">' + prefixText + '</span> ' : '') +
+            (mismatchText ? '<span style="color:red;">' + mismatchText + '</span>' : '') +
+            (suffixText ? '<span style="color:black;"> ' + suffixText + '</span>"' : '"');
     });
 
     clearBtn.addEventListener('click', () => {

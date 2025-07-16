@@ -64,6 +64,11 @@ button:disabled {
     color: white;
 }
 
+#translate-btn {
+    background-color: #4285F4;
+    color: white;
+}
+
 .navigation-buttons {
     margin-top: 1rem;
 }

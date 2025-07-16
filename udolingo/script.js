@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const nextBtn = document.getElementById('next-btn');
     const translateBtn = document.getElementById('translate-btn');
     const shuffleBtn = document.getElementById('shuffle-lessons-btn');
+    const vocab1Btn = document.getElementById('vocab1-btn');
+    const vocab2Btn = document.getElementById('vocab2-btn');
 
     // Config panel elements
     const openConfigPanelBtn = document.getElementById('open-config-panel-btn');
@@ -22,6 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentTaskIndex = 0;
     let lessons = [];
     let prevResponses = [];
+    let promptLang = '';
+    let solutionLang = '';
 
     // --- Utility Functions ---
     function setButtonsDisabled(disabled) {
@@ -31,6 +35,14 @@ document.addEventListener('DOMContentLoaded', () => {
         shuffleBtn.disabled = disabled;
         backBtn.disabled = disabled;
         translateBtn.disabled = disabled;
+        vocab1Btn.disabled = disabled;
+        vocab2Btn.disabled = disabled;
+    }
+
+    function setResponseButtonsDisabled(disabled) {
+        submitBtn.disabled = disabled;
+        clearBtn.disabled = disabled;
+        backBtn.disabled = disabled;
     }
 
     // --- Core Application Logic ---
@@ -42,13 +54,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         setButtonsDisabled(false);
-        const task = lessons[index];
-        promptEl.textContent = `Translate this: "${task.prompt}"`;
+        const lesson = lessons[index];
+        if (lesson.lang) {
+            const langParts = lesson.lang.split(';');
+            if (langParts.length == 2) {
+                promptLang = langParts[0].trim();
+                solutionLang = langParts[1].trim();
+                vocab1Btn.innerHTML = `${promptLang} 📖`;
+                vocab2Btn.innerHTML = `${solutionLang} 📖`;
+                vocab1Btn.style.display = '';
+                vocab2Btn.style.display = '';
+            } else {
+                promptLang = '';
+                solutionLang = '';
+                vocab1Btn.style.display = 'none';
+                vocab2Btn.style.display = 'none';
+            }
+        } else {
+            vocab1Btn.style.display = 'none';
+            vocab2Btn.style.display = 'none';
+        }
 
-        const words = removeExactDuplicates(splitSentence(task.solution + ' ' + task.distractors));
+
+        promptEl.textContent = `Translate this: "${lesson.prompt}"`;
+
+        const words = removeExactDuplicates(splitSentenceWithoutPunctuation(lesson.solution + ' ' + lesson.distractors));
         shuffleArray(words);
 
-        wordBankContainerEl.innerHTML = '';
+        clearWordBank();
         words.forEach(word => {
             const button = document.createElement('button');
             button.textContent = word;
@@ -71,8 +104,12 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/[.,!?¿¡—–\()"“”‘’]/g, '')
     }
 
+    function splitSentenceWithoutPunctuation(sentence) {
+        return splitSentence(removePunctuation(sentence));
+    }
+
     function splitSentence(sentence) {
-        return removePunctuation(sentence)
+        return sentence
             .split(/\s+/)
             .filter(Boolean); // remove empty strings
     }
@@ -88,6 +125,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function clearWordBank() {
+        wordBankContainerEl.innerHTML = '';
+    }
+
     function shuffleArray(array) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -95,18 +136,80 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function generateVocabulary(langcode, limit) {
+        const vocab = [];
+        lessons.forEach(lesson => {
+            if (!lesson.lang) return;
+            const parts = lesson.lang.split(';');
+            if (parts.length < 2) return;
+
+            let sentence = "";
+            if (parts[0] === langcode) {
+                sentence = lesson.prompt;
+            } else if (parts[parts.length - 1] === langcode) {
+                sentence = lesson.solution;
+            }
+
+            if (sentence) {
+                const words = splitSentenceWithoutPunctuation(sentence);
+                words.forEach(word => {
+                    if (word.length >= limit) {
+                        vocab.push(word);
+                    }
+                });
+            }
+        });
+        return removeExactDuplicates(vocab);
+    }
+
     // --- Event Listeners ---
     submitBtn.addEventListener('click', () => {
         const userResponse = responseContainerEl.textContent.trim();
         const solution = removePunctuation(lessons[currentTaskIndex].solution);
+        clearWordBank();
+        setResponseButtonsDisabled(true); // Disable buttons after submission
 
+        // If the user response exactly matches the solution, mark as correct.
         if (userResponse === solution) {
             feedbackEl.textContent = 'Correct!';
             feedbackEl.style.color = 'green';
-        } else {
-            feedbackEl.textContent = 'Incorrect. The correct answer is: "' + solution + '"';
-            feedbackEl.style.color = 'red';
+            return;
         }
+
+        // Use splitSentence to compare word by word
+        const userWords = splitSentenceWithoutPunctuation(userResponse);
+        const solWords = splitSentenceWithoutPunctuation(solution);
+        const solWordsOriginal = splitSentence(solution);
+
+        // Find the common prefix.
+        let prefixCount = 0;
+        while (
+            prefixCount < userWords.length &&
+            prefixCount < solWords.length &&
+            userWords[prefixCount] === solWords[prefixCount]
+        ) {
+            prefixCount++;
+        }
+
+        // Find the common suffix.
+        let suffixCount = 0;
+        while (
+            suffixCount < (solWords.length - prefixCount) &&
+            suffixCount < (userWords.length - prefixCount) &&
+            userWords[userWords.length - 1 - suffixCount] === solWords[solWords.length - 1 - suffixCount]
+        ) {
+            suffixCount++;
+        }
+
+        const prefixText = solWordsOriginal.slice(0, prefixCount).join(' ');
+        const mismatchText = solWordsOriginal.slice(prefixCount, solWords.length - suffixCount).join(' ');
+        const suffixText = solWordsOriginal.slice(solWords.length - suffixCount).join(' ');
+
+        // Build the feedback with inline spans.
+        feedbackEl.innerHTML = 'Incorrect. The correct answer is: "' + 
+            (prefixText ? '<span style="color:black;">' + prefixText + '</span> ' : '') +
+            (mismatchText ? '<span style="color:red;">' + mismatchText + '</span>' : '') +
+            (suffixText ? '<span style="color:black;"> ' + suffixText + '</span>"' : '"');
     });
 
     clearBtn.addEventListener('click', () => {
@@ -131,13 +234,33 @@ document.addEventListener('DOMContentLoaded', () => {
         const prompt = lessons[currentTaskIndex].prompt;
         // open https://translate.google.com/?sl=auto&text=
         const encodedPrompt = encodeURIComponent(prompt);
-        const translateUrl = `https://translate.google.com/?sl=auto&text=${encodedPrompt}`;
+        if (!promptLang || !solutionLang) {
+            const translateUrl = `https://translate.google.com/?sl=auto&text=${encodedPrompt}`;
+            window.open(translateUrl, '_blank');
+        } else {
+            const translateUrl = `https://translate.google.com/?sl=${promptLang}&tl=${solutionLang}&text=${encodedPrompt}`;
+            window.open(translateUrl, '_blank');
+        }
+    });
+
+    vocab1Btn.addEventListener('click', () => {
+        const vocab = generateVocabulary(promptLang, 4);
+        const encodedPrompt = encodeURIComponent(vocab.join(';\n'));
+        const translateUrl = `https://translate.google.com/?sl=${promptLang}&tl=${solutionLang}&text=${encodedPrompt}`;
+        window.open(translateUrl, '_blank');
+    });
+
+    vocab2Btn.addEventListener('click', () => {
+        const vocab = generateVocabulary(solutionLang, 4);
+        const encodedPrompt = encodeURIComponent(vocab.join(';\n'));
+        const translateUrl = `https://translate.google.com/?sl=${solutionLang}&tl=${promptLang}&text=${encodedPrompt}`;
         window.open(translateUrl, '_blank');
     });
 
     shuffleBtn.addEventListener('click', () => {
         shuffleArray(lessons)
-        loadTask(0);
+        currentTaskIndex = 0; // Reset to first task after shuffling
+        loadTask(currentTaskIndex);
     });
 
     // --- Config Panel Logic ---

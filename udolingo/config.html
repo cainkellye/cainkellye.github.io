@@ -22,21 +22,23 @@
 </head>
 <body>
     <h1>Lesson Configuration Template</h1>
-    <p>This template describes the structure of a lesson configuration JSON file. Each lesson includes a prompt, a correct translation (solution), and distractors. The distractors are space-separated strings, containing words similar in meaning or sounding to the words in the solution.</p>
+    <p>This template describes the structure of a lesson configuration JSON file. Each lesson includes a prompt, a correct translation (solution), distractors, and a language setting. The distractors are space-separated strings, containing words similar in meaning or sounding to the words in the solution. The <code>lang</code> property must be set to <code>"en;pt"</code> if the prompt is in English or <code>"pt;en"</code> if the prompt is in Portuguese.</p>
     
     <h2>Template Structure</h2>
     <pre>
 {
     "lessons": [
         {
-            "prompt": "Original sentence to translate",
-            "solution": "Correct translation of the prompt",
-            "distractors": "distractor1 distractor2 distractor3"
+            "prompt": "Original sentence to translate in german",
+            "solution": "Correct translation of the prompt in english",
+            "distractors": "distractor1 distractor2 distractor3",
+            "lang": "de;en"  // "prompt lang code;solution lang code"
         },
         {
-            "prompt": "Another translation practice",
-            "solution": "Correct translation of the prompt",
-            "distractors": "distractorA distractorB distractorC"
+            "prompt": "Another translation practice in english",
+            "solution": "Correct translation of the prompt in german",
+            "distractors": "distractorA distractorB distractorC",
+            "lang": "en;pt"  //  "prompt lang code;solution lang code"
         }
         // Add more lessons as needed
     ]
@@ -50,23 +52,26 @@
         {
             "prompt": "He runs every morning.",
             "solution": "Er läuft jeden Morgen",
-            "distractors": "geht Abend Nacht"
+            "distractors": "geht Abend Nacht",
+            "lang": "en;de"
         },
         {
-            "prompt": "Where is the nearest hospital?",
-            "solution": "Wo ist das nächste Krankenhaus?",
-            "distractors": "Klinik Notfall Zentrum"
+            "prompt": "Wo ist das nächste Krankenhaus?",
+            "solution": "Where is the nearest hospital?",
+            "distractors": "clinic next mechanic",
+            "lang": "de;en"
         },
         {
             "prompt": "I can't hear you.",
             "solution": "Ich kann dich nicht hören",
-            "distractors": "sehen sprechen fühlen"
+            "distractors": "sehen sprechen fühlen",
+            "lang": "en;de"
         }
         // Add more lessons as needed
     ]
 }
     </pre>
     
-    <p>Copy the template structure above and replace the placeholders with your own prompts, solutions, and distractors to generate new lessons using an LLM.</p>
+    <p>Copy the template structure above and replace the placeholders with your own prompts, solutions, distractors, and language settings, or generate new lessons using an LLM.</p>
 </body>
 </html>

@@ -54,14 +54,39 @@ button:disabled {
     color: white;
 }
 
+#submit-btn:disabled {
+    background-color: #a5d6a7; /* Muted green */
+    color: #e0e0e0;
+}
+
 #clear-btn {
     background-color: #f44336;
     color: white;
 }
 
+#clear-btn:disabled {
+    background-color: #f7bdbd; /* Muted red */
+    color: #e0e0e0;
+}
+
 #back-btn {
     background-color: #efc32a;
     color: white;
+}
+
+#back-btn:disabled {
+    background-color: #f5e7b3; /* Muted yellow */
+    color: #e0e0e0;
+}
+
+#translate-btn {
+    background-color: #4285F4;
+    color: white;
+}
+
+#translate-btn:disabled {
+    background-color: #b3c6e6; /* Muted blue */
+    color: #e0e0e0;
 }
 
 .navigation-buttons {

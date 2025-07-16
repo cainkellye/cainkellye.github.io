@@ -4,15 +4,16 @@ Each lesson should be structured as:
 {
   "prompt": <string>,
   "solution": <string>,
-  "distractors": <string>
+  "distractors": <string>,
+  "lang": "<prompt lang code>;<solution lang code>"
 }
 
 Instructions:
-- 10 prompts should be in English with Portuguese solutions (EN → PT)
-- 10 prompts should be in Portuguese with English solutions (PT → EN)
-- The "distractors" field should be a single space-separated string of 1–4 words (no array)
-- Distractors must resemble words in the solution (phonetically or semantically), but not contain any words from the actual solution
-- If the solution has 9 words or more, include at most 1 distractor
-- The content should be very difficult: use uncommon verb tenses, idiomatic expressions, or subtle grammar traps
+- 10 prompts should be in English with Portuguese solutions ("lang": "en;pt")
+- 10 prompts should be in Portuguese with English solutions ("lang": "pt;en")
+- The "distractors" field should be a single space-separated string of words (no array)
+- Distractors should seemingly fit the solution (phonetically or semantically), but not contain any words from the actual solution
+- Based on the length of the solution, use 1-4 disctractors.
+- The content should be difficult: use uncommon verb tenses, idiomatic expressions, or subtle grammar traps
 - Output valid JSON under the key "lessons"
 

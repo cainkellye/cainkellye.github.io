@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const backBtn = document.getElementById('back-btn');
     const feedbackEl = document.getElementById('feedback');
     const nextBtn = document.getElementById('next-btn');
+    const translateBtn = document.getElementById('translate-btn');
     const shuffleBtn = document.getElementById('shuffle-lessons-btn');
 
     // Config panel elements
@@ -29,9 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
         nextBtn.disabled = disabled;
         shuffleBtn.disabled = disabled;
         backBtn.disabled = disabled;
+        translateBtn.disabled = disabled;
     }
-
-    //google.hu/?sl=en&tl=pt&op=translate&text=
 
     // --- Core Application Logic ---
     function loadTask(index) {
@@ -125,6 +125,14 @@ document.addEventListener('DOMContentLoaded', () => {
     nextBtn.addEventListener('click', () => {
         currentTaskIndex = (currentTaskIndex + 1) % lessons.length;
         loadTask(currentTaskIndex);
+    });
+
+    translateBtn.addEventListener('click', () => {
+        const prompt = lessons[currentTaskIndex].prompt;
+        // open https://translate.google.com/?sl=auto&text=
+        const encodedPrompt = encodeURIComponent(prompt);
+        const translateUrl = `https://translate.google.com/?sl=auto&text=${encodedPrompt}`;
+        window.open(translateUrl, '_blank');
     });
 
     shuffleBtn.addEventListener('click', () => {

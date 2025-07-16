@@ -33,6 +33,12 @@ document.addEventListener('DOMContentLoaded', () => {
         translateBtn.disabled = disabled;
     }
 
+    function setResponseButtonsDisabled(disabled) {
+        submitBtn.disabled = disabled;
+        clearBtn.disabled = disabled;
+        backBtn.disabled = disabled;
+    }
+
     // --- Core Application Logic ---
     function loadTask(index) {
         if (!lessons || lessons.length === 0) {
@@ -48,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const words = removeExactDuplicates(splitSentenceWithoutPunctuation(task.solution + ' ' + task.distractors));
         shuffleArray(words);
 
-        wordBankContainerEl.innerHTML = '';
+        clearWordBank();
         words.forEach(word => {
             const button = document.createElement('button');
             button.textContent = word;
@@ -92,6 +98,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function clearWordBank() {
+        wordBankContainerEl.innerHTML = '';
+    }
+
     function shuffleArray(array) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -103,6 +113,8 @@ document.addEventListener('DOMContentLoaded', () => {
     submitBtn.addEventListener('click', () => {
         const userResponse = responseContainerEl.textContent.trim();
         const solution = removePunctuation(lessons[currentTaskIndex].solution);
+        clearWordBank();
+        setResponseButtonsDisabled(true); // Disable buttons after submission
 
         // If the user response exactly matches the solution, mark as correct.
         if (userResponse === solution) {

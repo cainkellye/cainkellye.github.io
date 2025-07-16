@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const nextBtn = document.getElementById('next-btn');
     const translateBtn = document.getElementById('translate-btn');
     const shuffleBtn = document.getElementById('shuffle-lessons-btn');
+    const vocab1Btn = document.getElementById('vocab1-btn');
+    const vocab2Btn = document.getElementById('vocab2-btn');
 
     // Config panel elements
     const openConfigPanelBtn = document.getElementById('open-config-panel-btn');
@@ -22,6 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentTaskIndex = 0;
     let lessons = [];
     let prevResponses = [];
+    let promptLang = '';
+    let solutionLang = '';
 
     // --- Utility Functions ---
     function setButtonsDisabled(disabled) {
@@ -31,6 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
         shuffleBtn.disabled = disabled;
         backBtn.disabled = disabled;
         translateBtn.disabled = disabled;
+        vocab1Btn.disabled = disabled;
+        vocab2Btn.disabled = disabled;
     }
 
     function setResponseButtonsDisabled(disabled) {
@@ -48,10 +54,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         setButtonsDisabled(false);
-        const task = lessons[index];
-        promptEl.textContent = `Translate this: "${task.prompt}"`;
+        const lesson = lessons[index];
+        if (lesson.lang) {
+            const langParts = lesson.lang.split(';');
+            if (langParts.length == 2) {
+                promptLang = langParts[0].trim();
+                solutionLang = langParts[1].trim();
+                vocab1Btn.innerHTML = `${promptLang} 📖`;
+                vocab2Btn.innerHTML = `${solutionLang} 📖`;
+                vocab1Btn.style.display = '';
+                vocab2Btn.style.display = '';
+            } else {
+                promptLang = '';
+                solutionLang = '';
+                vocab1Btn.style.display = 'none';
+                vocab2Btn.style.display = 'none';
+            }
+        } else {
+            vocab1Btn.style.display = 'none';
+            vocab2Btn.style.display = 'none';
+        }
 
-        const words = removeExactDuplicates(splitSentenceWithoutPunctuation(task.solution + ' ' + task.distractors));
+
+        promptEl.textContent = `Translate this: "${lesson.prompt}"`;
+
+        const words = removeExactDuplicates(splitSentenceWithoutPunctuation(lesson.solution + ' ' + lesson.distractors));
         shuffleArray(words);
 
         clearWordBank();
@@ -107,6 +134,32 @@ document.addEventListener('DOMContentLoaded', () => {
             const j = Math.floor(Math.random() * (i + 1));
             [array[i], array[j]] = [array[j], array[i]];
         }
+    }
+
+    function generateVocabulary(langcode, limit) {
+        const vocab = [];
+        lessons.forEach(lesson => {
+            if (!lesson.lang) return;
+            const parts = lesson.lang.split(';');
+            if (parts.length < 2) return;
+
+            let sentence = "";
+            if (parts[0] === langcode) {
+                sentence = lesson.prompt;
+            } else if (parts[parts.length - 1] === langcode) {
+                sentence = lesson.solution;
+            }
+
+            if (sentence) {
+                const words = splitSentenceWithoutPunctuation(sentence);
+                words.forEach(word => {
+                    if (word.length >= limit) {
+                        vocab.push(word);
+                    }
+                });
+            }
+        });
+        return removeExactDuplicates(vocab);
     }
 
     // --- Event Listeners ---
@@ -181,7 +234,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const prompt = lessons[currentTaskIndex].prompt;
         // open https://translate.google.com/?sl=auto&text=
         const encodedPrompt = encodeURIComponent(prompt);
-        const translateUrl = `https://translate.google.com/?sl=auto&text=${encodedPrompt}`;
+        if (!promptLang || !solutionLang) {
+            const translateUrl = `https://translate.google.com/?sl=auto&text=${encodedPrompt}`;
+            window.open(translateUrl, '_blank');
+        } else {
+            const translateUrl = `https://translate.google.com/?sl=${promptLang}&tl=${solutionLang}&text=${encodedPrompt}`;
+            window.open(translateUrl, '_blank');
+        }
+    });
+
+    vocab1Btn.addEventListener('click', () => {
+        const vocab = generateVocabulary(promptLang, 4);
+        const encodedPrompt = encodeURIComponent(vocab.join(';\n'));
+        const translateUrl = `https://translate.google.com/?sl=${promptLang}&tl=${solutionLang}&text=${encodedPrompt}`;
+        window.open(translateUrl, '_blank');
+    });
+
+    vocab2Btn.addEventListener('click', () => {
+        const vocab = generateVocabulary(solutionLang, 4);
+        const encodedPrompt = encodeURIComponent(vocab.join(';\n'));
+        const translateUrl = `https://translate.google.com/?sl=${solutionLang}&tl=${promptLang}&text=${encodedPrompt}`;
         window.open(translateUrl, '_blank');
     });
 

@@ -137,7 +137,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     shuffleBtn.addEventListener('click', () => {
         shuffleArray(lessons)
-        loadTask(0);
+        currentTaskIndex = 0; // Reset to first task after shuffling
+        loadTask(currentTaskIndex);
     });
 
     // --- Config Panel Logic ---

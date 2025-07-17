@@ -5,62 +5,62 @@
         {
             "A": "Had she known the truth, she would have acted differently.",
             "B": "Se ela soubesse a verdade, teria agido de forma diferente.",
-            "noiseA": "soubessem soubesseis agir",
-            "noiseB": ""
+            "noiseA": "",
+            "noiseB": "soubessem soubesseis agir"
         },
         {
             "A": "He had scarcely arrived when the storm broke.",
             "B": "Mal ele havia chegado quando a tempestade irrompeu.",
-            "noiseA": "malhar chegadoes tempestivamente",
-            "noiseB": ""
+            "noiseA": "",
+            "noiseB": "malhar chegadoes tempestivamente"
         },
         {
             "A": "Were it not for the ongoing strikes, the economy would be thriving.",
             "B": "Não fossem as greves em curso, a economia estaria a prosperar.",
-            "noiseA": "fossemos grevistas prosperado",
-            "noiseB": ""
+            "noiseA": "",
+            "noiseB": "fossemos grevistas prosperado"
         },
         {
             "A": "She wishes she hadn't given up on her dreams so easily.",
             "B": "Ela queria não ter desistido dos seus sonhos tão facilmente.",
-            "noiseA": "queriam desisti fácil",
-            "noiseB": ""
+            "noiseA": "",
+            "noiseB": "queriam desisti fácil"
         },
         {
             "A": "They might have been planning a surprise, had we not interfered.",
             "B": "Eles poderiam ter estado a planear uma surpresa, não tivéssemos nós interferido.",
-            "noiseA": "poderiam planejar interferimos",
-            "noiseB": ""
+            "noiseA": "",
+            "noiseB": "poderiam planejar interferimos"
         },
         {
             "A": "Lest he forget, remind him of the meeting.",
             "B": "Para que ele não se esqueça, lembre-o da reunião.",
-            "noiseA": "esquecer esqueçam lembra",
-            "noiseB": ""
+            "noiseA": "",
+            "noiseB": "esquecer esqueçam lembra"
         },
         {
             "A": "No sooner had I shut my eyes than the phone rang.",
             "B": "Assim que fechei os olhos, o telefone tocou.",
-            "noiseA": "assimilar toques feches",
-            "noiseB": ""
+            "noiseA": "",
+            "noiseB": "assimilar toques feches"
         },
         {
             "A": "But for your timely intervention, the project would have failed.",
             "B": "Se não fosse a sua intervenção oportuna, o projeto teria falhado.",
-            "noiseA": "fosseis oportunos falhariam",
-            "noiseB": ""
+            "noiseA": "",
+            "noiseB": "fosseis oportunos falhariam"
         },
         {
             "A": "It's high time they addressed the underlying issues.",
             "B": "Já é mais do que tempo de eles abordarem as questões subjacentes.",
-            "noiseA": "abordar questõesse submeterem",
-            "noiseB": ""
+            "noiseA": "",
+            "noiseB": "abordar questõesse submeterem"
         },
         {
             "A": "Raramente nos deparamos com tais percepções profundas.",
             "B": "Seldom do we encounter such profound insights.",
-            "noiseA": "deparas profundo profundas",
-            "noiseB": ""
+            "noiseA": "",
+            "noiseB": "deparas profundo profundas"
         },
         {
             "A": "However much it rains, the field remains dry.",

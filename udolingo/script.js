@@ -79,12 +79,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Check if we need to advance to the next cycle
         checkAndAdvanceCycle() {
-            if (state.currentTaskIndex === 0 && state.currentCycle === 0) {
+            if (state.currentCycle === 0) {
                 // We've completed the first cycle, move to second cycle
                 state.currentCycle = 1;
-                return true;
+            } else if (state.currentCycle === 1) {
+                this.initializeDirections();
             }
-            return false;
         },
 
         // Shuffle directions (called when shuffle button is pressed)

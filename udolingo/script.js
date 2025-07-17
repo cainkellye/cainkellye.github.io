@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const shuffleBtn = document.getElementById('shuffle-lessons-btn');
     const vocab1Btn = document.getElementById('vocab1-btn');
     const vocab2Btn = document.getElementById('vocab2-btn');
+    const switchDirectionBtn = document.getElementById('switch-direction-btn');
 
     // Config panel elements
     const openConfigPanelBtn = document.getElementById('open-config-panel-btn');
@@ -23,9 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentTaskIndex = 0;
     let lessons = [];
+    let config = null;
     let prevResponses = [];
     let promptLang = '';
     let solutionLang = '';
+    let currentDirection = 'AtoB'; // 'AtoB' or 'BtoA'
 
     // --- Utility Functions ---
     function setButtonsDisabled(disabled) {
@@ -37,12 +40,52 @@ document.addEventListener('DOMContentLoaded', () => {
         translateBtn.disabled = disabled;
         vocab1Btn.disabled = disabled;
         vocab2Btn.disabled = disabled;
+        switchDirectionBtn.disabled = disabled;
     }
 
     function setResponseButtonsDisabled(disabled) {
         submitBtn.disabled = disabled;
         clearBtn.disabled = disabled;
         backBtn.disabled = disabled;
+    }
+
+    // Generate noise words from other lessons when missing
+    function generateNoise(lessons, excludeIndex, lang, count) {
+        const words = [];
+        lessons.forEach((lesson, index) => {
+            if (index === excludeIndex) return;
+            
+            const sentence = lang === 'A' ? lesson.A : lesson.B;
+            if (sentence) {
+                const lessonWords = splitSentenceWithoutPunctuation(sentence);
+                words.push(...lessonWords);
+            }
+        });
+        
+        // Get random selection of words
+        shuffleArray(words);
+        return removeExactDuplicates(words).slice(0, count).join(' ');
+    }
+
+    // Get current lesson data based on direction
+    function getCurrentLessonData(lesson) {
+        if (currentDirection === 'AtoB') {
+            return {
+                prompt: lesson.A,
+                solution: lesson.B,
+                noise: lesson.noiseB || generateNoise(lessons, currentTaskIndex, 'B', 6),
+                promptLang: config["langA-B"] ? config["langA-B"][0] : '',
+                solutionLang: config["langA-B"] ? config["langA-B"][1] : ''
+            };
+        } else {
+            return {
+                prompt: lesson.B,
+                solution: lesson.A,
+                noise: lesson.noiseA || generateNoise(lessons, currentTaskIndex, 'A', 6),
+                promptLang: config["langA-B"] ? config["langA-B"][1] : '',
+                solutionLang: config["langA-B"] ? config["langA-B"][0] : ''
+            };
+        }
     }
 
     // --- Core Application Logic ---
@@ -55,30 +98,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setButtonsDisabled(false);
         const lesson = lessons[index];
-        if (lesson.lang) {
-            const langParts = lesson.lang.split(';');
-            if (langParts.length == 2) {
-                promptLang = langParts[0].trim();
-                solutionLang = langParts[1].trim();
-                vocab1Btn.innerHTML = `${promptLang} 📖`;
-                vocab2Btn.innerHTML = `${solutionLang} 📖`;
-                vocab1Btn.style.display = '';
-                vocab2Btn.style.display = '';
-            } else {
-                promptLang = '';
-                solutionLang = '';
-                vocab1Btn.style.display = 'none';
-                vocab2Btn.style.display = 'none';
-            }
+        const lessonData = getCurrentLessonData(lesson);
+        
+        promptLang = lessonData.promptLang;
+        solutionLang = lessonData.solutionLang;
+
+        // Update direction button
+        if (config && config["langA-B"] && config["langA-B"].length === 2) {
+            const langA = config["langA-B"][0];
+            const langB = config["langA-B"][1];
+            switchDirectionBtn.innerHTML = currentDirection === 'AtoB' ? `${langA} → ${langB}` : `${langB} → ${langA}`;
+            switchDirectionBtn.style.display = '';
+            
+            // Update vocab buttons
+            vocab1Btn.innerHTML = `${promptLang} 📖`;
+            vocab2Btn.innerHTML = `${solutionLang} 📖`;
+            vocab1Btn.style.display = '';
+            vocab2Btn.style.display = '';
         } else {
+            switchDirectionBtn.style.display = 'none';
             vocab1Btn.style.display = 'none';
             vocab2Btn.style.display = 'none';
         }
 
+        promptEl.textContent = `Translate this: "${lessonData.prompt}"`;
 
-        promptEl.textContent = `Translate this: "${lesson.prompt}"`;
-
-        const words = removeExactDuplicates(splitSentenceWithoutPunctuation(lesson.solution + ' ' + lesson.distractors));
+        const words = removeExactDuplicates(splitSentenceWithoutPunctuation(lessonData.solution + ' ' + lessonData.noise));
         shuffleArray(words);
 
         clearWordBank();
@@ -139,15 +184,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function generateVocabulary(langcode, limit) {
         const vocab = [];
         lessons.forEach(lesson => {
-            if (!lesson.lang) return;
-            const parts = lesson.lang.split(';');
-            if (parts.length < 2) return;
-
             let sentence = "";
-            if (parts[0] === langcode) {
-                sentence = lesson.prompt;
-            } else if (parts[parts.length - 1] === langcode) {
-                sentence = lesson.solution;
+            if (config["langA-B"][0] === langcode) {
+                sentence = lesson.A;
+            } else if (config["langA-B"][1] === langcode) {
+                sentence = lesson.B;
             }
 
             if (sentence) {
@@ -165,7 +206,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Event Listeners ---
     submitBtn.addEventListener('click', () => {
         const userResponse = responseContainerEl.textContent.trim();
-        const solution = removePunctuation(lessons[currentTaskIndex].solution);
+        const lessonData = getCurrentLessonData(lessons[currentTaskIndex]);
+        const solution = removePunctuation(lessonData.solution);
         clearWordBank();
         setResponseButtonsDisabled(true); // Disable buttons after submission
 
@@ -231,10 +273,14 @@ document.addEventListener('DOMContentLoaded', () => {
         loadTask(currentTaskIndex);
     });
 
+    switchDirectionBtn.addEventListener('click', () => {
+        currentDirection = currentDirection === 'AtoB' ? 'BtoA' : 'AtoB';
+        loadTask(currentTaskIndex);
+    });
+
     translateBtn.addEventListener('click', () => {
-        const prompt = lessons[currentTaskIndex].prompt;
-        // open https://translate.google.com/?sl=auto&text=
-        const encodedPrompt = encodeURIComponent(prompt);
+        const lessonData = getCurrentLessonData(lessons[currentTaskIndex]);
+        const encodedPrompt = encodeURIComponent(lessonData.prompt);
         if (!promptLang || !solutionLang) {
             const translateUrl = `https://translate.google.com/?sl=auto&text=${encodedPrompt}`;
             window.open(translateUrl, '_blank');
@@ -282,8 +328,10 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const newConfig = JSON.parse(configText);
             if (newConfig && newConfig.lessons) {
-                lessons = newConfig.lessons;
+                config = newConfig;
+                lessons = config.lessons;
                 currentTaskIndex = 0;
+                currentDirection = 'AtoB'; // Reset direction
                 loadTask(currentTaskIndex);
                 configInput.value = ''; // Clear the textarea
                 configPanel.style.display = 'none'; // Close the panel
@@ -304,8 +352,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return response.json();
         })
-        .then(data => {
-            lessons = data.lessons;
+        .then(config => {
+            lessons = config.lessons;
             loadTask(currentTaskIndex);
         })
         .catch(error => {

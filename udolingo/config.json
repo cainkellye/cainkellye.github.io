@@ -1,124 +1,126 @@
 {
+    "title": "English-Portuguese Advanced Sentences",
+    "langA-B": ["en", "pt"],
     "lessons": [
         {
-            "prompt": "Had she known the truth, she would have acted differently.",
-            "solution": "Se ela soubesse a verdade, teria agido de forma diferente.",
-            "distractors": "soubessem soubesseis agir",
-            "lang": "en;pt"
+            "A": "Had she known the truth, she would have acted differently.",
+            "B": "Se ela soubesse a verdade, teria agido de forma diferente.",
+            "noiseA": "soubessem soubesseis agir",
+            "noiseB": ""
         },
         {
-            "prompt": "He had scarcely arrived when the storm broke.",
-            "solution": "Mal ele havia chegado quando a tempestade irrompeu.",
-            "distractors": "malhar chegadoes tempestivamente",
-            "lang": "en;pt"
+            "A": "He had scarcely arrived when the storm broke.",
+            "B": "Mal ele havia chegado quando a tempestade irrompeu.",
+            "noiseA": "malhar chegadoes tempestivamente",
+            "noiseB": ""
         },
         {
-            "prompt": "Were it not for the ongoing strikes, the economy would be thriving.",
-            "solution": "Não fossem as greves em curso, a economia estaria a prosperar.",
-            "distractors": "fossemos grevistas prosperado",
-            "lang": "en;pt"
+            "A": "Were it not for the ongoing strikes, the economy would be thriving.",
+            "B": "Não fossem as greves em curso, a economia estaria a prosperar.",
+            "noiseA": "fossemos grevistas prosperado",
+            "noiseB": ""
         },
         {
-            "prompt": "She wishes she hadn't given up on her dreams so easily.",
-            "solution": "Ela queria não ter desistido dos seus sonhos tão facilmente.",
-            "distractors": "queriam desisti fácil",
-            "lang": "en;pt"
+            "A": "She wishes she hadn't given up on her dreams so easily.",
+            "B": "Ela queria não ter desistido dos seus sonhos tão facilmente.",
+            "noiseA": "queriam desisti fácil",
+            "noiseB": ""
         },
         {
-            "prompt": "They might have been planning a surprise, had we not interfered.",
-            "solution": "Eles poderiam ter estado a planear uma surpresa, não tivéssemos nós interferido.",
-            "distractors": "poderiam planejar interferimos",
-            "lang": "en;pt"
+            "A": "They might have been planning a surprise, had we not interfered.",
+            "B": "Eles poderiam ter estado a planear uma surpresa, não tivéssemos nós interferido.",
+            "noiseA": "poderiam planejar interferimos",
+            "noiseB": ""
         },
         {
-            "prompt": "Lest he forget, remind him of the meeting.",
-            "solution": "Para que ele não se esqueça, lembre-o da reunião.",
-            "distractors": "esquecer esqueçam lembra",
-            "lang": "en;pt"
+            "A": "Lest he forget, remind him of the meeting.",
+            "B": "Para que ele não se esqueça, lembre-o da reunião.",
+            "noiseA": "esquecer esqueçam lembra",
+            "noiseB": ""
         },
         {
-            "prompt": "No sooner had I shut my eyes than the phone rang.",
-            "solution": "Assim que fechei os olhos, o telefone tocou.",
-            "distractors": "assimilar toques feches",
-            "lang": "en;pt"
+            "A": "No sooner had I shut my eyes than the phone rang.",
+            "B": "Assim que fechei os olhos, o telefone tocou.",
+            "noiseA": "assimilar toques feches",
+            "noiseB": ""
         },
         {
-            "prompt": "But for your timely intervention, the project would have failed.",
-            "solution": "Se não fosse a sua intervenção oportuna, o projeto teria falhado.",
-            "distractors": "fosseis oportunos falhariam",
-            "lang": "en;pt"
+            "A": "But for your timely intervention, the project would have failed.",
+            "B": "Se não fosse a sua intervenção oportuna, o projeto teria falhado.",
+            "noiseA": "fosseis oportunos falhariam",
+            "noiseB": ""
         },
         {
-            "prompt": "It's high time they addressed the underlying issues.",
-            "solution": "Já é mais do que tempo de eles abordarem as questões subjacentes.",
-            "distractors": "abordar questõesse submeterem",
-            "lang": "en;pt"
+            "A": "It's high time they addressed the underlying issues.",
+            "B": "Já é mais do que tempo de eles abordarem as questões subjacentes.",
+            "noiseA": "abordar questõesse submeterem",
+            "noiseB": ""
         },
         {
-            "prompt": "Seldom do we encounter such profound insights.",
-            "solution": "Raramente nos deparamos com tais percepções profundas.",
-            "distractors": "deparas profundo profundas",
-            "lang": "en;pt"
+            "A": "Raramente nos deparamos com tais percepções profundas.",
+            "B": "Seldom do we encounter such profound insights.",
+            "noiseA": "deparas profundo profundas",
+            "noiseB": ""
         },
         {
-            "prompt": "Por mais que chova, o campo continua seco.",
-            "solution": "However much it rains, the field remains dry.",
-            "distractors": "howevered rained dried",
-            "lang": "pt;en"
+            "A": "However much it rains, the field remains dry.",
+            "B": "Por mais que chova, o campo continua seco.",
+            "noiseA": "howevered rained dried",
+            "noiseB": ""
         },
         {
-            "prompt": "Oxalá ele tivesse vindo à festa.",
-            "solution": "If only he had come to the party.",
-            "distractors": "only coming partied",
-            "lang": "pt;en"
+            "A": "If only he had come to the party.",
+            "B": "Oxalá ele tivesse vindo à festa.",
+            "noiseA": "only coming partied",
+            "noiseB": ""
         },
         {
-            "prompt": "Ao passo que ele se esforçava, ela desistia.",
-            "solution": "While he strove, she gave up.",
-            "distractors": "strives giving gaveup",
-            "lang": "pt;en"
+            "A": "While he strove, she gave up.",
+            "B": "Ao passo que ele se esforçava, ela desistia.",
+            "noiseA": "strives giving gaveup",
+            "noiseB": ""
         },
         {
-            "prompt": "Não obstante a sua promessa, ele não apareceu.",
-            "solution": "Notwithstanding his promise, he didn't show up.",
-            "distractors": "notwithstandingly promised shown",
-            "lang": "pt;en"
+            "A": "Notwithstanding his promise, he didn't show up.",
+            "B": "Não obstante a sua promessa, ele não apareceu.",
+            "noiseA": "notwithstandingly promised shown",
+            "noiseB": ""
         },
         {
-            "prompt": "Prouvera a Deus que a verdade fosse revelada.",
-            "solution": "Would to God the truth were revealed.",
-            "distractors": "wouldst truthful revealing",
-            "lang": "pt;en"
+            "A": "Would to God the truth were revealed.",
+            "B": "Prouvera a Deus que a verdade fosse revelada.",
+            "noiseA": "wouldst truthful revealing",
+            "noiseB": ""
         },
         {
-            "prompt": "Ele agiu como se nada tivesse acontecido, mas era evidente a sua perturbação.",
-            "solution": "He acted as if nothing had happened, but his disturbance was evident.",
-            "distractors": "happenings disturbingly evidenced",
-            "lang": "pt;en"
+            "A": "He acted as if nothing had happened, but his disturbance was evident.",
+            "B": "Ele agiu como se nada tivesse acontecido, mas era evidente a sua perturbação.",
+            "noiseA": "happenings disturbingly evidenced",
+            "noiseB": ""
         },
         {
-            "prompt": "Porventura, encontrar-se-á uma solução para o dilema.",
-            "solution": "Perhaps, a solution to the dilemma will be found.",
-            "distractors": "possibly finding solving",
-            "lang": "pt;en"
+            "A": "Perhaps, a solution to the dilemma will be found.",
+            "B": "Porventura, encontrar-se-á uma solução para o dilema.",
+            "noiseA": "possibly finding solving",
+            "noiseB": ""
         },
         {
-            "prompt": "Seja como for, a decisão já foi tomada.",
-            "solution": "Be that as it may, the decision has already been made.",
-            "distractors": "being making decided",
-            "lang": "pt;en"
+            "A": "Be that as it may, the decision has already been made.",
+            "B": "Seja como for, a decisão já foi tomada.",
+            "noiseA": "being making decided",
+            "noiseB": ""
         },
         {
-            "prompt": "Deveras, a situação é mais complexa do que aparenta.",
-            "solution": "Indeed, the situation is more complex than it appears.",
-            "distractors": "indubitably situations appeared",
-            "lang": "pt;en"
+            "A": "Indeed, the situation is more complex than it appears.",
+            "B": "Deveras, a situação é mais complexa do que aparenta.",
+            "noiseA": "indubitably situations appeared",
+            "noiseB": ""
         },
         {
-            "prompt": "Mister se faz que todos colaborem para o sucesso do projeto.",
-            "solution": "It is necessary that everyone collaborates for the project's success.",
-            "distractors": "necessitates everyone's successful",
-            "lang": "pt;en"
+            "A": "It is necessary that everyone collaborates for the project's success.",
+            "B": "Mister se faz que todos colaborem para o sucesso do projeto.",
+            "noiseA": "necessitates everyone's successful",
+            "noiseB": ""
         }
     ]
 }

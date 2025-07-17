@@ -175,6 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
             feedbackEl.style.color = 'green';
             return;
         }
+        feedbackEl.style.color = '';
 
         // Use splitSentence to compare word by word
         const userWords = splitSentenceWithoutPunctuation(userResponse);

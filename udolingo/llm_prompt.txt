@@ -1,4 +1,4 @@
-Generate a JSON object with 20 hard-level bilingual language lesson entries for Portuguese learners.
+Generate a JSON object with 20 bilingual language translate lesson entries.
 
 Each lesson should be structured as:
 {

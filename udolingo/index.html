@@ -41,11 +41,45 @@
 
     <div id="config-panel" class="modal-overlay" style="display: none;">
         <div class="modal-content">
-            <h2>Paste Lesson Configuration</h2>
-            <textarea id="config-input" placeholder="Paste your JSON configuration here..."></textarea>
+            <h2>Lesson Configuration</h2>
+            
+            <!-- Tabs for switching between paste and saved lessons -->
+            <div class="config-tabs">
+                <button id="paste-tab-btn" class="tab-button active">Paste New Lesson</button>
+                <button id="saved-tab-btn" class="tab-button">Saved Lessons</button>
+            </div>
+            
+            <!-- Paste lesson tab -->
+            <div id="paste-tab" class="tab-content active">
+                <textarea id="config-input" placeholder="Paste your JSON configuration here..."></textarea>
+                <div class="modal-buttons">
+                    <button id="load-config-btn">Load</button>
+                    <button id="save-config-btn" style="display: none;">Load & Save</button>
+                    <button id="cancel-config-btn">Cancel</button>
+                </div>
+            </div>
+            
+            <!-- Saved lessons tab -->
+            <div id="saved-tab" class="tab-content">
+                <div id="saved-lessons-container">
+                    <p id="no-saved-lessons-msg">No saved lessons found.</p>
+                    <div id="saved-lessons-list"></div>
+                </div>
+                <div class="modal-buttons">
+                    <button id="cancel-saved-btn">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Rename modal -->
+    <div id="rename-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content small-modal">
+            <h3>Rename Lesson</h3>
+            <input type="text" id="rename-input" placeholder="Enter new title..." />
             <div class="modal-buttons">
-                <button id="load-config-btn">Load</button>
-                <button id="cancel-config-btn">Cancel</button>
+                <button id="confirm-rename-btn">Rename</button>
+                <button id="cancel-rename-btn">Cancel</button>
             </div>
         </div>
     </div>

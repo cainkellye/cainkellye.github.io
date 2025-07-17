@@ -22,7 +22,26 @@ document.addEventListener('DOMContentLoaded', () => {
         configPanel: document.getElementById('config-panel'),
         configInput: document.getElementById('config-input'),
         loadConfig: document.getElementById('load-config-btn'),
-        cancelConfig: document.getElementById('cancel-config-btn')
+        saveConfig: document.getElementById('save-config-btn'),
+        cancelConfig: document.getElementById('cancel-config-btn'),
+        
+        // Tabs
+        pasteTab: document.getElementById('paste-tab'),
+        savedTab: document.getElementById('saved-tab'),
+        pasteTabBtn: document.getElementById('paste-tab-btn'),
+        savedTabBtn: document.getElementById('saved-tab-btn'),
+        
+        // Saved lessons
+        savedLessonsContainer: document.getElementById('saved-lessons-container'),
+        savedLessonsList: document.getElementById('saved-lessons-list'),
+        noSavedLessonsMsg: document.getElementById('no-saved-lessons-msg'),
+        cancelSaved: document.getElementById('cancel-saved-btn'),
+        
+        // Rename modal
+        renameModal: document.getElementById('rename-modal'),
+        renameInput: document.getElementById('rename-input'),
+        confirmRename: document.getElementById('confirm-rename-btn'),
+        cancelRename: document.getElementById('cancel-rename-btn')
     };
 
     // --- Application State ---
@@ -34,7 +53,332 @@ document.addEventListener('DOMContentLoaded', () => {
         promptLang: '',
         solutionLang: '',
         lessonDirections: [], // Array to track direction for each lesson
-        currentCycle: 0 // Track which cycle we're on (0: first direction, 1: second direction)
+        currentCycle: 0, // Track which cycle we're on (0: first direction, 1: second direction)
+        currentRenameId: null // Track which lesson is being renamed
+    };
+
+    // --- Storage Management ---
+    const StorageManager = {
+        // Save a lesson configuration to localStorage
+        saveLesson(config) {
+            const savedLessons = this.getSavedLessons();
+            //console.log('Current saved lessons:', savedLessons);
+            const lessonId = Date.now().toString();
+            console.log('Saving lesson with ID:', lessonId);
+            
+            // Create a saveable lesson object
+            const lessonToSave = {
+                id: lessonId,
+                title: config.title || 'Untitled Lesson',
+                langCode: config["langA-B"] ? config["langA-B"].join('-') : 'unknown',
+                languages: config["langA-B"] || ['?', '?'],
+                config: config,
+                dateAdded: new Date().toISOString(),
+                lessonCount: config.lessons ? config.lessons.length : 0
+            };
+            
+            try {
+                // Store the full lesson data in localStorage
+                const success = this.setStorageItem(`udolingo_lesson_${lessonId}`, lessonToSave);
+                if (!success) {
+                    console.error('Failed to save lesson data');
+                    return null;
+                }
+                
+                // Update the lessons index
+                savedLessons[lessonId] = {
+                    id: lessonId,
+                    title: lessonToSave.title,
+                    langCode: lessonToSave.langCode,
+                    languages: lessonToSave.languages,
+                    dateAdded: lessonToSave.dateAdded,
+                    lessonCount: lessonToSave.lessonCount
+                };
+                
+                const indexSuccess = this.setSavedLessonsIndex(savedLessons);
+                if (!indexSuccess) {
+                    // Clean up the lesson data if index update failed
+                    this.removeStorageItem(`udolingo_lesson_${lessonId}`);
+                    console.error('Failed to update lessons index');
+                    return null;
+                }
+                
+                console.log('Lesson saved successfully');
+                return lessonId;
+            } catch (error) {
+                console.error('Error saving lesson:', error);
+                return null;
+            }
+        },
+        
+        // Get all saved lessons metadata
+        getSavedLessons() {
+            try {
+                const indexData = this.getStorageItem('udolingo_lessons_index');
+                if (!indexData) {
+                    console.log("No saved lessons index found");
+                    return {};
+                }
+                
+                console.log("Lessons index found:", Object.keys(indexData).length, "lessons");
+                return indexData;
+            } catch (error) {
+                console.error('Error getting saved lessons:', error);
+                return {};
+            }
+        },
+        
+        // Set the lessons index (metadata only)
+        setSavedLessonsIndex(lessonsIndex) {
+            try {
+                return this.setStorageItem('udolingo_lessons_index', lessonsIndex);
+            } catch (error) {
+                console.error('Error setting lessons index:', error);
+                return false;
+            }
+        },
+        
+        // Get a specific saved lesson by ID (full data)
+        getSavedLesson(id) {
+            try {
+                const lessonData = this.getStorageItem(`udolingo_lesson_${id}`);
+                if (!lessonData) {
+                    console.log(`Lesson ${id} not found`);
+                    return null;
+                }
+                
+                console.log(`Lesson ${id} loaded successfully`);
+                return lessonData;
+            } catch (error) {
+                console.error(`Error getting lesson ${id}:`, error);
+                return null;
+            }
+        },
+        
+        // Delete a saved lesson by ID
+        deleteLesson(id) {
+            try {
+                // Remove the lesson data
+                const dataRemoved = this.removeStorageItem(`udolingo_lesson_${id}`);
+                if (!dataRemoved) {
+                    console.error(`Failed to remove lesson data for ${id}`);
+                    return false;
+                }
+                
+                // Update the index
+                const savedLessons = this.getSavedLessons();
+                if (savedLessons[id]) {
+                    delete savedLessons[id];
+                    const indexSuccess = this.setSavedLessonsIndex(savedLessons);
+                    if (!indexSuccess) {
+                        console.error('Failed to update lessons index after deletion');
+                        return false;
+                    }
+                    
+                    console.log(`Lesson ${id} deleted successfully`);
+                    return true;
+                } else {
+                    console.log(`Lesson ${id} not found in index`);
+                    return false;
+                }
+            } catch (error) {
+                console.error(`Error deleting lesson ${id}:`, error);
+                return false;
+            }
+        },
+        
+        // Rename a saved lesson
+        renameLesson(id, newTitle) {
+            try {
+                // Update the full lesson data
+                const lessonData = this.getSavedLesson(id);
+                if (!lessonData) {
+                    console.log(`Lesson ${id} not found for renaming`);
+                    return false;
+                }
+                
+                lessonData.title = newTitle;
+                const dataSuccess = this.setStorageItem(`udolingo_lesson_${id}`, lessonData);
+                if (!dataSuccess) {
+                    console.error(`Failed to update lesson data for ${id}`);
+                    return false;
+                }
+                
+                // Update the index
+                const savedLessons = this.getSavedLessons();
+                if (savedLessons[id]) {
+                    savedLessons[id].title = newTitle;
+                    const indexSuccess = this.setSavedLessonsIndex(savedLessons);
+                    if (!indexSuccess) {
+                        console.error('Failed to update lessons index after rename');
+                        return false;
+                    }
+                    
+                    console.log(`Lesson ${id} renamed successfully`);
+                    return true;
+                } else {
+                    console.log(`Lesson ${id} not found in index`);
+                    return false;
+                }
+            } catch (error) {
+                console.error(`Error renaming lesson ${id}:`, error);
+                return false;
+            }
+        },
+        
+        // localStorage utility functions
+        setStorageItem(key, value) {
+            try {
+                const json = JSON.stringify(value);
+                localStorage.setItem(key, json);
+                console.log(`Stored ${key} with size: ${json.length} bytes`);
+                return true;
+            } catch (error) {
+                if (error.name === 'QuotaExceededError') {
+                    console.error('localStorage quota exceeded');
+                    alert('Storage quota exceeded. Please delete some saved lessons to free up space.');
+                } else {
+                    console.error('Error saving to localStorage:', error);
+                }
+                return false;
+            }
+        },
+        
+        getStorageItem(key) {
+            try {
+                const item = localStorage.getItem(key);
+                if (item === null) {
+                    return null;
+                }
+                return JSON.parse(item);
+            } catch (error) {
+                console.error(`Error parsing localStorage item ${key}:`, error);
+                return null;
+            }
+        },
+        
+        removeStorageItem(key) {
+            try {
+                localStorage.removeItem(key);
+                console.log(`Removed ${key} from localStorage`);
+                return true;
+            } catch (error) {
+                console.error(`Error removing ${key} from localStorage:`, error);
+                return false;
+            }
+        },
+        
+        // Check localStorage availability and health
+        checkStorageHealth() {
+            try {
+                const testKey = 'udolingo_test';
+                const testData = { test: 'data', timestamp: Date.now() };
+                
+                // Test write
+                const writeSuccess = this.setStorageItem(testKey, testData);
+                if (!writeSuccess) {
+                    return false;
+                }
+                
+                // Test read
+                const retrieved = this.getStorageItem(testKey);
+                if (!retrieved || retrieved.test !== 'data') {
+                    return false;
+                }
+                
+                // Clean up
+                this.removeStorageItem(testKey);
+                
+                console.log('localStorage health check passed');
+                return true;
+            } catch (error) {
+                console.error('localStorage health check failed:', error);
+                return false;
+            }
+        },
+        
+        // Clear all saved lessons (emergency cleanup)
+        clearAllSavedLessons() {
+            try {
+                const savedLessons = this.getSavedLessons();
+                
+                // Remove all lesson data
+                Object.keys(savedLessons).forEach(id => {
+                    this.removeStorageItem(`udolingo_lesson_${id}`);
+                });
+                
+                // Clear the index
+                this.removeStorageItem('udolingo_lessons_index');
+                
+                console.log('All saved lessons cleared');
+                return true;
+            } catch (error) {
+                console.error('Error clearing saved lessons:', error);
+                return false;
+            }
+        },
+        
+        // Get storage usage info
+        getStorageInfo() {
+            try {
+                const savedLessons = this.getSavedLessons();
+                const lessonCount = Object.keys(savedLessons).length;
+                
+                // Calculate total storage usage
+                let totalSize = 0;
+                const indexSize = JSON.stringify(savedLessons).length;
+                totalSize += indexSize;
+                
+                Object.keys(savedLessons).forEach(id => {
+                    const lessonData = this.getStorageItem(`udolingo_lesson_${id}`);
+                    if (lessonData) {
+                        totalSize += JSON.stringify(lessonData).length;
+                    }
+                });
+                
+                // Estimate total localStorage usage
+                let totalLocalStorageSize = 0;
+                for (let key in localStorage) {
+                    if (localStorage.hasOwnProperty(key)) {
+                        totalLocalStorageSize += localStorage[key].length + key.length;
+                    }
+                }
+                
+                return {
+                    isAvailable: typeof(Storage) !== "undefined",
+                    lessonCount: lessonCount,
+                    udolingoStorageSize: totalSize,
+                    totalLocalStorageSize: totalLocalStorageSize,
+                    formattedSize: this.formatBytes(totalSize),
+                    formattedTotalSize: this.formatBytes(totalLocalStorageSize),
+                    estimatedQuota: '5-10MB (varies by browser)'
+                };
+            } catch (error) {
+                console.error('Error getting storage info:', error);
+                return {
+                    isAvailable: false,
+                    lessonCount: 0,
+                    udolingoStorageSize: 0,
+                    totalLocalStorageSize: 0,
+                    formattedSize: '0 bytes',
+                    formattedTotalSize: '0 bytes',
+                    estimatedQuota: 'Unknown'
+                };
+            }
+        },
+        
+        // Format bytes for display
+        formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 bytes';
+            
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['bytes', 'KB', 'MB', 'GB'];
+            
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
     };
 
     // --- Direction Management ---
@@ -52,7 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 directions.push('AtoB');
             }
             
-            // Add BtoA directions for the rest
+            // Add BtoA for the rest
             for (let i = halfLength; i < state.lessons.length; i++) {
                 directions.push('BtoA');
             }
@@ -169,6 +513,149 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.feedback.textContent = isCorrect ? 'Correct!' : '';
             elements.feedback.innerHTML = isCorrect ? 'Correct!' : feedbackText;
             elements.feedback.style.color = isCorrect ? 'green' : '';
+        },
+
+        // Tab management
+        switchTab(tabName) {
+            if (tabName === 'paste') {
+                elements.pasteTab.classList.add('active');
+                elements.savedTab.classList.remove('active');
+                elements.pasteTabBtn.classList.add('active');
+                elements.savedTabBtn.classList.remove('active');
+            } else if (tabName === 'saved') {
+                elements.pasteTab.classList.remove('active');
+                elements.savedTab.classList.add('active');
+                elements.pasteTabBtn.classList.remove('active');
+                elements.savedTabBtn.classList.add('active');
+                this.refreshSavedLessonsList();
+            }
+        },
+
+        // Refresh the saved lessons list
+        refreshSavedLessonsList() {
+            const savedLessons = StorageManager.getSavedLessons();
+            const lessonIds = Object.keys(savedLessons);
+            
+            elements.savedLessonsList.innerHTML = '';
+            
+            if (lessonIds.length === 0) {
+                elements.noSavedLessonsMsg.style.display = 'block';
+                return;
+            }
+            
+            elements.noSavedLessonsMsg.style.display = 'none';
+            
+            lessonIds.forEach(id => {
+                const lesson = savedLessons[id];
+                const lessonItem = this.createSavedLessonItem(lesson);
+                elements.savedLessonsList.appendChild(lessonItem);
+            });
+        },
+
+        // Create a saved lesson item element
+        createSavedLessonItem(lesson) {
+            const item = document.createElement('div');
+            item.className = 'saved-lesson-item';
+            
+            const info = document.createElement('div');
+            info.className = 'lesson-info';
+            
+            const title = document.createElement('div');
+            title.className = 'lesson-title';
+            title.textContent = lesson.title;
+            
+            const details = document.createElement('div');
+            details.className = 'lesson-details';
+            const dateAdded = new Date(lesson.dateAdded).toLocaleDateString();
+            details.textContent = `${lesson.languages[0]} ↔ ${lesson.languages[1]} • ${lesson.lessonCount} lessons • ${dateAdded}`;
+            
+            info.appendChild(title);
+            info.appendChild(details);
+            
+            const actions = document.createElement('div');
+            actions.className = 'lesson-actions';
+            
+            const loadBtn = document.createElement('button');
+            loadBtn.className = 'load-lesson-btn';
+            loadBtn.textContent = 'Load';
+            loadBtn.addEventListener('click', () => {
+                ConfigManager.loadSavedLesson(lesson.id);
+            });
+            
+            const renameBtn = document.createElement('button');
+            renameBtn.className = 'rename-lesson-btn';
+            renameBtn.textContent = 'Rename';
+            renameBtn.addEventListener('click', () => {
+                this.showRenameModal(lesson.id, lesson.title);
+            });
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-lesson-btn';
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.addEventListener('click', () => {
+                this.deleteSavedLesson(lesson.id);
+            });
+            
+            actions.appendChild(loadBtn);
+            actions.appendChild(renameBtn);
+            actions.appendChild(deleteBtn);
+            
+            item.appendChild(info);
+            item.appendChild(actions);
+            
+            return item;
+        },
+
+        // Show rename modal
+        showRenameModal(lessonId, currentTitle) {
+            state.currentRenameId = lessonId;
+            elements.renameInput.value = currentTitle;
+            elements.renameModal.style.display = 'flex';
+            elements.renameInput.focus();
+            elements.renameInput.select();
+        },
+
+        // Hide rename modal
+        hideRenameModal() {
+            elements.renameModal.style.display = 'none';
+            state.currentRenameId = null;
+            elements.renameInput.value = '';
+        },
+
+        // Delete saved lesson with confirmation
+        deleteSavedLesson(lessonId) {
+            const lesson = StorageManager.getSavedLesson(lessonId);
+            if (lesson && confirm(`Are you sure you want to delete "${lesson.title}"?`)) {
+                const success = StorageManager.deleteLesson(lessonId);
+                if (success) {
+                    this.refreshSavedLessonsList();
+                } else {
+                    alert("Failed to delete lesson. Please try again.");
+                }
+            }
+        },
+
+        // Show save button when valid config is detected
+        showSaveButton(configData) {
+            if (configData && configData.lessons && configData.lessons.length > 0) {
+                elements.saveConfig.style.display = 'inline-block';
+            } else {
+                elements.saveConfig.style.display = 'none';
+            }
+        },
+        
+        // Show storage info (for debugging)
+        showStorageInfo() {
+            const info = StorageManager.getStorageInfo();
+            const message = `Storage Info:
+            
+Available: ${info.isAvailable ? 'Yes' : 'No'}
+Saved Lessons: ${info.lessonCount}
+Udolingo Storage: ${info.formattedSize}
+Total localStorage: ${info.formattedTotalSize}
+Estimated Quota: ${info.estimatedQuota}`;
+            
+            alert(message);
         }
     };
 
@@ -369,6 +856,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const newConfig = JSON.parse(configText);
                 if (newConfig && newConfig.lessons) {
                     this.loadConfiguration(newConfig);
+                    UI.showSaveButton(newConfig);
                     elements.configInput.value = '';
                     elements.configPanel.style.display = 'none';
                 } else {
@@ -376,6 +864,46 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (error) {
                 alert(`Error parsing JSON: ${error.message}`);
+            }
+        },
+
+        saveCurrentConfig() {
+            const configText = elements.configInput.value;
+            if (!configText) {
+                alert("No configuration to save.");
+                return;
+            }
+            
+            try {
+                const configData = JSON.parse(configText);
+                if (configData && configData.lessons) {
+                    // Check storage health before saving
+                    if (!StorageManager.checkStorageHealth()) {
+                        alert("Storage appears to be having issues. Please try again or check your browser settings.");
+                        return;
+                    }
+                    
+                    const lessonId = StorageManager.saveLesson(configData);
+                    if (lessonId) {
+                        console.log(`Lesson saved successfully! Id=${lessonId}`);
+                    } else {
+                        alert("Failed to save lesson. Please try again or check if you have enough storage space.");
+                    }
+                } else {
+                    alert("Invalid configuration format. Make sure it has a 'lessons' property.");
+                }
+            } catch (error) {
+                alert(`Error parsing JSON: ${error.message}`);
+            }
+        },
+
+        loadSavedLesson(lessonId) {
+            const lesson = StorageManager.getSavedLesson(lessonId);
+            if (lesson) {
+                this.loadConfiguration(lesson.config);
+                elements.configPanel.style.display = 'none';
+            } else {
+                alert("Lesson not found.");
             }
         },
 
@@ -455,14 +983,77 @@ document.addEventListener('DOMContentLoaded', () => {
             // Configuration panel
             elements.openConfigPanel.addEventListener('click', () => {
                 elements.configPanel.style.display = 'flex';
+                UI.switchTab('paste');
             });
 
             elements.cancelConfig.addEventListener('click', () => {
+                elements.configPanel.style.display = 'none';
+                elements.configInput.value = '';
+                UI.showSaveButton(null);
+            });
+
+            elements.cancelSaved.addEventListener('click', () => {
                 elements.configPanel.style.display = 'none';
             });
 
             elements.loadConfig.addEventListener('click', () => {
                 ConfigManager.loadFromText();
+            });
+
+            elements.saveConfig.addEventListener('click', () => {
+                ConfigManager.saveCurrentConfig();
+                ConfigManager.loadFromText();
+            });
+
+            // Tab switching
+            elements.pasteTabBtn.addEventListener('click', () => {
+                UI.switchTab('paste');
+            });
+
+            elements.savedTabBtn.addEventListener('click', () => {
+                UI.switchTab('saved');
+            });
+
+            // Rename modal
+            elements.confirmRename.addEventListener('click', () => {
+                const newTitle = elements.renameInput.value.trim();
+                if (newTitle && state.currentRenameId) {
+                    const success = StorageManager.renameLesson(state.currentRenameId, newTitle);
+                    if (success) {
+                        UI.hideRenameModal();
+                        UI.refreshSavedLessonsList();
+                    } else {
+                        alert("Failed to rename lesson. Please try again.");
+                    }
+                } else {
+                    alert("Please enter a valid title.");
+                }
+            });
+
+            elements.cancelRename.addEventListener('click', () => {
+                UI.hideRenameModal();
+            });
+
+            // Rename input Enter key
+            elements.renameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    elements.confirmRename.click();
+                }
+            });
+
+            // Config input change detection for save button
+            elements.configInput.addEventListener('input', () => {
+                const configText = elements.configInput.value.trim();
+                if (configText) {
+                    try {
+                        const configData = JSON.parse(configText);
+                        UI.showSaveButton(configData);
+                    } catch (error) {
+                        UI.showSaveButton(null);
+                    }
+                } else {
+                    UI.showSaveButton(null);
+                }
             });
         }
     };
@@ -470,7 +1061,57 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Application Initialization ---
     function initialize() {
         EventHandlers.setupEventListeners();
-        ConfigManager.loadFromFile();
+        
+        // Debug storage info on startup
+        const storageInfo = StorageManager.getStorageInfo();
+        console.log('Storage info on startup:', storageInfo);
+        
+        if (!storageInfo.isAvailable) {
+            console.warn('localStorage is not available');
+        }
+        
+        // Add global debug functions for console access
+        window.udolingoDebug = {
+            clearAllLessons: () => {
+                if (confirm('Are you sure you want to delete ALL saved lessons? This cannot be undone.')) {
+                    const success = StorageManager.clearAllSavedLessons();
+                    if (success) {
+                        console.log('All lessons cleared');
+                        UI.refreshSavedLessonsList();
+                    } else {
+                        console.error('Failed to clear lessons');
+                    }
+                }
+            },
+            showStorageInfo: () => {
+                console.log('Storage Info:', StorageManager.getStorageInfo());
+            },
+            getSavedLessons: () => {
+                return StorageManager.getSavedLessons();
+            }
+        };
+        
+        console.log('Debug functions available: udolingoDebug.clearAllLessons(), udolingoDebug.showStorageInfo(), udolingoDebug.getSavedLessons()');
+        
+        // Auto-load the latest saved lesson if any exist
+        const savedLessons = StorageManager.getSavedLessons();
+        const lessonIds = Object.keys(savedLessons);
+        if (lessonIds.length > 0) {
+            // Find the lesson with the latest dateAdded
+            let latestId = lessonIds[0];
+            let latestDate = new Date(savedLessons[latestId].dateAdded).getTime();
+            lessonIds.forEach(id => {
+                const lessonDate = new Date(savedLessons[id].dateAdded).getTime();
+                if (lessonDate > latestDate) {
+                    latestDate = lessonDate;
+                    latestId = id;
+                }
+            });
+            console.log('Auto-loading latest saved lesson:', savedLessons[latestId].title);
+            ConfigManager.loadSavedLesson(latestId);
+        } else {
+            ConfigManager.loadFromFile();
+        }
     }
 
     // Start the application

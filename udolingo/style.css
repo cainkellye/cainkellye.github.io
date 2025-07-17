@@ -144,6 +144,12 @@ button:disabled {
     width: 80%;
     max-width: 500px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.modal-content.small-modal {
+    max-width: 400px;
 }
 
 #config-input {
@@ -155,4 +161,108 @@ button:disabled {
 
 .modal-buttons {
     text-align: right;
+}
+
+/* Tab styles */
+.config-tabs {
+    display: flex;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 1rem;
+}
+
+.tab-button {
+    flex: 1;
+    padding: 0.5rem 1rem;
+    border: none;
+    background-color: #f0f0f0;
+    cursor: pointer;
+    border-radius: 5px 5px 0 0;
+    margin-right: 2px;
+}
+
+.tab-button.active {
+    background-color: #008CBA;
+    color: white;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Saved lessons styles */
+#saved-lessons-container {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+}
+
+.saved-lesson-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.lesson-info {
+    flex: 1;
+    text-align: left;
+}
+
+.lesson-title {
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+}
+
+.lesson-details {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.lesson-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.lesson-actions button {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+.load-lesson-btn {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.rename-lesson-btn {
+    background-color: #ff9800;
+    color: white;
+}
+
+.delete-lesson-btn {
+    background-color: #f44336;
+    color: white;
+}
+
+#rename-input {
+    width: 100%;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+#no-saved-lessons-msg {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    margin: 2rem 0;
 }

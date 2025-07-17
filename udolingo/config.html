@@ -22,25 +22,25 @@
 </head>
 <body>
     <h1>Lesson Configuration Template</h1>
-    <p>This template describes the structure of a lesson configuration JSON file. Each lesson includes a prompt, a correct translation (solution), distractors, and a language setting. The distractors are space-separated strings, containing words similar in meaning or sounding to the words in the solution. The <code>lang</code> property must be set to <code>"en;pt"</code> if the prompt is in English or <code>"pt;en"</code> if the prompt is in Portuguese.</p>
+    <p>This template describes the structure of a lesson configuration JSON file. It supports bidirectional lessons with language A and B properties. Each lesson can be practiced in both directions (A→B and B→A). The <code>noiseA</code> and <code>noiseB</code> properties contain distractor words for each language. If noise is missing, it will be automatically generated from other lessons.</p>
     
     <h2>Template Structure</h2>
     <pre>
 {
+    "title": "Lesson Set Title",
+    "langA-B": ["lang_code_A", "lang_code_B"],
     "lessons": [
         {
-            "prompt": "Original sentence to translate in german",
-            "solution": "Correct translation of the prompt in english",
-            "distractors": "distractor1 distractor2 distractor3",
-            "lang": "de;en"  // "prompt lang code;solution lang code"
+            "A": "Sentence in language A",
+            "B": "Translation in language B",
+            "noiseA": "distractor1 distractor2 distractor3",
+            "noiseB": "distractor_a distractor_b distractor_c"
         },
         {
-            "prompt": "Another translation practice in english",
-            "solution": "Correct translation of the prompt in german",
-            "distractors": "distractorA distractorB distractorC",
-            "lang": "en;pt"  //  "prompt lang code;solution lang code"
+            "A": "Another sentence in language A",
+            "B": "Another translation in language B"
+            // Note: noiseA and noiseB are optional - will be auto-generated if missing
         }
-        // Add more lessons as needed
     ]
 }
     </pre>
@@ -48,30 +48,37 @@
     <h2>Example</h2>
     <pre>
 {
+    "title": "Spanish-English Basics",
+    "langA-B": ["es", "en"],
     "lessons": [
         {
-            "prompt": "He runs every morning.",
-            "solution": "Er läuft jeden Morgen",
-            "distractors": "geht Abend Nacht",
-            "lang": "en;de"
+            "A": "¿Cómo estás?",
+            "B": "How are you?",
+            "noiseA": "Dónde Qué hora es",
+            "noiseB": "Who How old"
         },
         {
-            "prompt": "Wo ist das nächste Krankenhaus?",
-            "solution": "Where is the nearest hospital?",
-            "distractors": "clinic next mechanic",
-            "lang": "de;en"
+            "A": "Buenos días.",
+            "B": "Good morning."
         },
         {
-            "prompt": "I can't hear you.",
-            "solution": "Ich kann dich nicht hören",
-            "distractors": "sehen sprechen fühlen",
-            "lang": "en;de"
+            "A": "Me llamo Juan.",
+            "B": "My name is Juan.",
+            "noiseA": "llamar nombre soy",
+            "noiseB": "called named am"
         }
-        // Add more lessons as needed
     ]
 }
     </pre>
     
-    <p>Copy the template structure above and replace the placeholders with your own prompts, solutions, distractors, and language settings, or generate new lessons using an LLM.</p>
+    <h2>Features</h2>
+    <ul>
+        <li><strong>Bidirectional Practice:</strong> Each lesson can be practiced in both directions (A→B and B→A)</li>
+        <li><strong>Automatic Noise Generation:</strong> If noiseA or noiseB are missing, distractor words are automatically generated from other lessons</li>
+        <li><strong>Direction Switching:</strong> Use the direction button to switch between translation directions</li>
+        <li><strong>Language-Specific Vocabulary:</strong> Vocabulary buttons generate word lists for each language</li>
+    </ul>
+    
+    <p>Copy the template structure above and replace the placeholders with your own sentences, translations, and distractor words, or generate new lessons using an LLM.</p>
 </body>
 </html>

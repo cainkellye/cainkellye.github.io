@@ -9,8 +9,8 @@ body {
 
 .container {
     background-color: white;
-    padding: 1rem 2rem;
-    border-radius: 10px;
+    padding: 1rem 1rem;
+    border-radius: 12px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     text-align: center;
     width: 90%;
@@ -105,9 +105,18 @@ button:disabled {
 
 #next-btn,
 #shuffle-lessons-btn,
+#switch-direction-btn,
 #open-config-panel-btn {
     background-color: #008CBA;
     color: white;
+}
+
+#next-btn:disabled,
+#shuffle-lessons-btn:disabled,
+#switch-direction-btn:disabled,
+#open-config-panel-btn:disabled {
+    background-color: #80ACDA;
+    color: #e0e0e0;
 }
 
 .word-bank-btn {

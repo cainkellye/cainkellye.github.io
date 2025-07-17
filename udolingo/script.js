@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
         shuffle: document.getElementById('shuffle-lessons-btn'),
         vocab1: document.getElementById('vocab1-btn'),
         vocab2: document.getElementById('vocab2-btn'),
+        mistakes: document.getElementById('mistakes-btn'),
         
         // Config panel
         openConfigPanel: document.getElementById('open-config-panel-btn'),
@@ -41,7 +42,16 @@ document.addEventListener('DOMContentLoaded', () => {
         renameModal: document.getElementById('rename-modal'),
         renameInput: document.getElementById('rename-input'),
         confirmRename: document.getElementById('confirm-rename-btn'),
-        cancelRename: document.getElementById('cancel-rename-btn')
+        cancelRename: document.getElementById('cancel-rename-btn'),
+        
+        // Mistakes modal
+        mistakesModal: document.getElementById('mistakes-modal'),
+        mistakesContent: document.getElementById('mistakes-content'),
+        mistakesList: document.getElementById('mistakes-list'),
+        noMistakesMsg: document.getElementById('no-mistakes-msg'),
+        copyMistakes: document.getElementById('copy-mistakes-btn'),
+        clearMistakes: document.getElementById('clear-mistakes-btn'),
+        closeMistakes: document.getElementById('close-mistakes-btn')
     };
 
     // --- Application State ---
@@ -54,7 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
         solutionLang: '',
         lessonDirections: [], // Array to track direction for each lesson
         currentCycle: 0, // Track which cycle we're on (0: first direction, 1: second direction)
-        currentRenameId: null // Track which lesson is being renamed
+        currentRenameId: null, // Track which lesson is being renamed
+        mistakes: [] // Track user mistakes
     };
 
     // --- Storage Management ---
@@ -474,7 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- UI Management ---
     const UI = {
         setButtonsDisabled(disabled) {
-            const buttonIds = ['submit', 'clear', 'next', 'shuffle', 'back', 'translate', 'vocab1', 'vocab2'];
+            const buttonIds = ['submit', 'clear', 'next', 'shuffle', 'back', 'translate', 'vocab1', 'vocab2', 'mistakes'];
             buttonIds.forEach(id => {
                 elements[id].disabled = disabled;
             });
@@ -744,6 +755,15 @@ Estimated Quota: ${info.estimatedQuota}`;
                 return;
             }
 
+            // Record the mistake
+            MistakesManager.recordMistake(
+                lessonData.prompt,
+                solution,
+                userResponse,
+                state.currentTaskIndex,
+                currentDirection
+            );
+
             // Generate detailed feedback
             const feedbackHtml = this.generateDetailedFeedback(userResponse, solution);
             UI.showFeedback(false, feedbackHtml);
@@ -834,6 +854,170 @@ Estimated Quota: ${info.estimatedQuota}`;
         }
     };
 
+    // --- Mistakes Management ---
+    const MistakesManager = {
+        recordMistake(prompt, solution, userResponse, lessonIndex, direction) {
+            const mistake = {
+                id: Date.now(),
+                prompt: prompt,
+                solution: solution,
+                userResponse: userResponse,
+                lessonIndex: lessonIndex,
+                direction: direction,
+            };
+            
+            state.mistakes.push(mistake);
+            console.log('Mistake recorded:', mistake);
+        },
+        
+        clearAllMistakes() {
+            state.mistakes = [];
+            console.log('All mistakes cleared');
+        },
+        
+        showMistakesModal() {
+            this.refreshMistakesList();
+            elements.mistakesModal.style.display = 'flex';
+        },
+        
+        hideMistakesModal() {
+            elements.mistakesModal.style.display = 'none';
+        },
+        
+        refreshMistakesList() {
+            elements.mistakesList.innerHTML = '';
+            
+            if (state.mistakes.length === 0) {
+                elements.noMistakesMsg.style.display = 'block';
+                elements.copyMistakes.style.display = 'none';
+                elements.clearMistakes.style.display = 'none';
+                return;
+            }
+            
+            elements.noMistakesMsg.style.display = 'none';
+            elements.copyMistakes.style.display = 'inline-block';
+            elements.clearMistakes.style.display = 'inline-block';
+            
+            // Group mistakes by lesson and direction for better organization
+            const groupedMistakes = this.groupMistakesByLesson();
+            
+            Object.keys(groupedMistakes).forEach(key => {
+                const mistakes = groupedMistakes[key];
+                const [lessonIndex, direction] = key.split('_');
+                
+                // Create a section for this lesson/direction
+                const sectionHeader = document.createElement('div');
+                sectionHeader.className = 'mistake-section-header';
+                sectionHeader.innerHTML = `<h4>Lesson ${parseInt(lessonIndex) + 1} (${direction === 'AtoB' ? state.config["langA-B"][0] + ' → ' + state.config["langA-B"][1] : state.config["langA-B"][1] + ' → ' + state.config["langA-B"][0]})</h4>`;
+                elements.mistakesList.appendChild(sectionHeader);
+                
+                mistakes.forEach(mistake => {
+                    const mistakeItem = this.createMistakeItem(mistake);
+                    elements.mistakesList.appendChild(mistakeItem);
+                });
+            });
+        },
+        
+        // Group mistakes by lesson and direction
+        groupMistakesByLesson() {
+            const grouped = {};
+            state.mistakes.forEach(mistake => {
+                const key = `${mistake.lessonIndex}_${mistake.direction}`;
+                if (!grouped[key]) {
+                    grouped[key] = [];
+                }
+                grouped[key].push(mistake);
+            });
+            return grouped;
+        },
+        
+        createMistakeItem(mistake) {
+            const item = document.createElement('div');
+            item.className = 'mistake-item';
+            
+            const prompt = document.createElement('div');
+            prompt.className = 'mistake-prompt';
+            prompt.textContent = `Prompt: "${mistake.prompt}"`;
+            
+            const solution = document.createElement('div');
+            solution.className = 'mistake-solution';
+            solution.textContent = `Correct: "${mistake.solution}"`;
+            
+            const response = document.createElement('div');
+            response.className = 'mistake-response';
+            response.textContent = `Your answer: "${mistake.userResponse}"`;
+            
+            item.appendChild(prompt);
+            item.appendChild(solution);
+            item.appendChild(response);
+            
+            return item;
+        },
+        
+        // Generate LLM-friendly text for copying
+        generateLLMText() {
+            if (state.mistakes.length === 0) {
+                return 'No mistakes to analyze.';
+            }
+            
+            let text = `Please help me understand my language learning mistakes. I'm studying ${state.config["langA-B"][0]} ↔ ${state.config["langA-B"][1]} with the lesson "${state.config.title}".\n\n`;
+            text += `Here are my ${state.mistakes.length} mistakes:\n\n`;
+            
+            state.mistakes.forEach((mistake, index) => {
+                const directionText = mistake.direction === 'AtoB' 
+                    ? `${state.config["langA-B"][0]} → ${state.config["langA-B"][1]}`
+                    : `${state.config["langA-B"][1]} → ${state.config["langA-B"][0]}`;
+                
+                text += `${index + 1}. [${directionText}] Lesson ${mistake.lessonIndex + 1}\n`;
+                text += `   Prompt: "${mistake.prompt}"\n`;
+                text += `   Correct: "${mistake.solution}"\n`;
+                text += `   My answer: "${mistake.userResponse}"\n\n`;
+            });
+            
+            text += 'Please explain what I did wrong in each case and provide tips to avoid similar mistakes in the future.';
+            
+            return text;
+        },
+        
+        copyMistakesToClipboard() {
+            const text = this.generateLLMText();
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('Mistakes copied to clipboard! You can now paste this into an LLM for analysis.');
+                }).catch(err => {
+                    console.error('Failed to copy to clipboard:', err);
+                    this.fallbackCopyToClipboard(text);
+                });
+            } else {
+                this.fallbackCopyToClipboard(text);
+            }
+        },
+        
+        // Fallback copy method for older browsers
+        fallbackCopyToClipboard(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                alert('Mistakes copied to clipboard! You can now paste this into an LLM for analysis.');
+            } catch (err) {
+                console.error('Fallback copy failed:', err);
+                alert('Copy failed. Please manually copy the text from the console.');
+                console.log('Mistakes text for LLM:', text);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+    };
+
     // --- Configuration Management ---
     const ConfigManager = {
         loadConfiguration(configData) {
@@ -843,6 +1027,7 @@ Estimated Quota: ${info.estimatedQuota}`;
             DirectionManager.initializeDirections();
             LessonManager.loadTask(state.currentTaskIndex);
             UI.updateVocabButtons(state.config["langA-B"]);
+            MistakesManager.clearAllMistakes();
         },
 
         loadFromText() {
@@ -961,10 +1146,13 @@ Estimated Quota: ${info.estimatedQuota}`;
             });
 
             elements.shuffle.addEventListener('click', () => {
-                Utils.shuffleArray(state.lessons);
-                DirectionManager.shuffleDirections();
-                state.currentTaskIndex = 0;
-                LessonManager.loadTask(state.currentTaskIndex);
+                if (state.mistakes.length == 0 || confirm('This will clear the mistakes list. Are you sure you want to shuffle lessons?')) {
+                    Utils.shuffleArray(state.lessons);
+                    DirectionManager.shuffleDirections();
+                    state.currentTaskIndex = 0;
+                    LessonManager.loadTask(state.currentTaskIndex);
+                    MistakesManager.clearAllMistakes();
+                }
             });
 
             // Translation and vocabulary
@@ -978,6 +1166,11 @@ Estimated Quota: ${info.estimatedQuota}`;
 
             elements.vocab2.addEventListener('click', () => {
                 VocabularyManager.openVocabularyTranslation(state.solutionLang, state.promptLang);
+            });
+
+            // Mistakes functionality
+            elements.mistakes.addEventListener('click', () => {
+                MistakesManager.showMistakesModal();
             });
 
             // Configuration panel
@@ -1053,6 +1246,22 @@ Estimated Quota: ${info.estimatedQuota}`;
                     }
                 } else {
                     UI.showSaveButton(null);
+                }
+            });
+
+            // Mistakes modal event handlers
+            elements.closeMistakes.addEventListener('click', () => {
+                MistakesManager.hideMistakesModal();
+            });
+
+            elements.copyMistakes.addEventListener('click', () => {
+                MistakesManager.copyMistakesToClipboard();
+            });
+
+            elements.clearMistakes.addEventListener('click', () => {
+                if (confirm('Are you sure you want to clear all recorded mistakes? This cannot be undone.')) {
+                    MistakesManager.clearAllMistakes();
+                    MistakesManager.refreshMistakesList();
                 }
             });
         }

@@ -29,6 +29,7 @@
             <button id="next-btn" disabled>Next</button>
         </div>
         <div class="navigation-buttons">
+            <button id="mistakes-btn" disabled>My mistakes</button>
             <button id="vocab1-btn" title="Open vocabulary" style="display: none">a → b 📖</button>
             <button id="vocab2-btn" title="Open vocabulary" style="display: none">b → a 📖</button>
         </div>
@@ -80,6 +81,22 @@
             <div class="modal-buttons">
                 <button id="confirm-rename-btn">Rename</button>
                 <button id="cancel-rename-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mistakes modal -->
+    <div id="mistakes-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content large-modal">
+            <h3>My Mistakes</h3>
+            <div id="mistakes-content">
+                <p id="no-mistakes-msg">No mistakes recorded yet. Great job!</p>
+                <div id="mistakes-list"></div>
+            </div>
+            <div class="modal-buttons">
+                <button id="copy-mistakes-btn" style="display: none;">Copy for LLM</button>
+                <button id="clear-mistakes-btn" style="display: none;">Clear All</button>
+                <button id="close-mistakes-btn">Close</button>
             </div>
         </div>
     </div>

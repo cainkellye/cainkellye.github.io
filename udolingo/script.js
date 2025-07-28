@@ -1406,11 +1406,11 @@ Estimated Quota: ${info.estimatedQuota}`;
             });
 
             elements.vocab1.addEventListener('click', () => {
-                VocabularyManager.openVocabularyTranslation(state.promptLang, state.solutionLang);
+                VocabularyManager.openVocabularyTranslation(state.config["langA-B"][0], state.config["langA-B"][1]);
             });
 
             elements.vocab2.addEventListener('click', () => {
-                VocabularyManager.openVocabularyTranslation(state.solutionLang, state.promptLang);
+                VocabularyManager.openVocabularyTranslation(state.config["langA-B"][1], state.config["langA-B"][0]);
             });
 
             elements.mistakes.addEventListener('click', () => {

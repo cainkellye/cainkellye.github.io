@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mistakes: document.getElementById('mistakes-btn'),
         saveCurrent: document.getElementById('save-current-btn'),
         share: document.getElementById('share-btn'),
+        currentConfig: document.getElementById('current-config-btn'),
         
         // Config panel
         openConfigPanel: document.getElementById('open-config-panel-btn'),
@@ -1256,6 +1257,31 @@ Estimated Quota: ${info.estimatedQuota}`;
             }
         },
 
+        showCurrentConfig() {
+            const configStr = JSON.stringify(state.config, null, 2); // Pretty-print JSON
+            const newTab = window.open('', '_blank');
+            if (newTab) {
+                newTab.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>${state.config.title}</title>
+                        <link rel="stylesheet" href="config-style.css">
+                    </head>
+                    <body>
+                        <h1>Udolingo Configuration</h1>
+                        <textarea spellcheck="false">${configStr}</textarea>
+                    </body>
+                    </html>
+                `);
+                newTab.document.close();
+            } else {
+                alert('Unable to open a new tab. Please check your popup blocker settings.');
+            }
+        },
+
         // Fallback share method for older browsers
         fallbackShareMethod(shareURL) {
             const textArea = document.createElement('textarea');
@@ -1364,7 +1390,6 @@ Estimated Quota: ${info.estimatedQuota}`;
                 VocabularyManager.openVocabularyTranslation(state.solutionLang, state.promptLang);
             });
 
-            // Mistakes functionality
             elements.mistakes.addEventListener('click', () => {
                 MistakesManager.showMistakesModal();
             });
@@ -1375,6 +1400,10 @@ Estimated Quota: ${info.estimatedQuota}`;
 
             elements.share.addEventListener('click', () => {
                 ConfigManager.shareCurrentConfig();
+            });
+
+            elements.currentConfig.addEventListener('click', () => {
+                ConfigManager.showCurrentConfig();
             });
 
             // Configuration panel

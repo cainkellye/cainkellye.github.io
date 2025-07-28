@@ -1,4 +1,47 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- URL Parameter Handling ---
+    const URLHandler = {
+        // Get query parameter value
+        getQueryParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        },
+
+        // Load config from URL parameter
+        loadConfigFromURL() {
+            const compressedConfig = this.getQueryParam('c');
+            if (compressedConfig) {
+                try {
+                    const decompressed = LZString144.decompressFromEncodedURIComponent(compressedConfig);
+                    if (decompressed) {
+                        const config = JSON.parse(decompressed);
+                        if (config && config.lessons) {
+                            console.log('Loading config from URL parameter...');
+                            ConfigManager.loadConfiguration(config);
+                            return true;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error loading config from URL:', error);
+                }
+            }
+            return false;
+        },
+
+        // Generate shareable URL for current config
+        generateShareURL(config) {
+            try {
+                const configJSON = JSON.stringify(config);
+                const compressed = LZString144.compressToEncodedURIComponent(configJSON);
+                const baseURL = window.location.origin + window.location.pathname;
+                return `${baseURL}?c=${compressed}`;
+            } catch (error) {
+                console.error('Error generating share URL:', error);
+                return null;
+            }
+        }
+    };
+
     // --- DOM Elements ---
     const elements = {
         // Main elements
@@ -17,13 +60,14 @@ document.addEventListener('DOMContentLoaded', () => {
         vocab1: document.getElementById('vocab1-btn'),
         vocab2: document.getElementById('vocab2-btn'),
         mistakes: document.getElementById('mistakes-btn'),
+        saveCurrent: document.getElementById('save-current-btn'),
+        share: document.getElementById('share-btn'),
         
         // Config panel
         openConfigPanel: document.getElementById('open-config-panel-btn'),
         configPanel: document.getElementById('config-panel'),
         configInput: document.getElementById('config-input'),
-        loadConfig: document.getElementById('load-config-btn'),
-        saveConfig: document.getElementById('save-config-btn'),
+        loadSaveConfig: document.getElementById('load-save-config-btn'),
         cancelConfig: document.getElementById('cancel-config-btn'),
         
         // Tabs
@@ -70,10 +114,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Storage Management ---
     const StorageManager = {
-        // Save a lesson configuration to localStorage
+        // Save a lesson configuration to localStorage with compression
         saveLesson(config) {
             const savedLessons = this.getSavedLessons();
-            //console.log('Current saved lessons:', savedLessons);
             const lessonId = Date.now().toString();
             console.log('Saving lesson with ID:', lessonId);
             
@@ -89,8 +132,15 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             
             try {
-                // Store the full lesson data in localStorage
-                const success = this.setStorageItem(`udolingo_lesson_${lessonId}`, lessonToSave);
+                // Compress the lesson data
+                const compressed = this.compressData(lessonToSave);
+                if (!compressed) {
+                    console.error('Failed to compress lesson data');
+                    return null;
+                }
+                
+                // Store the compressed lesson data in localStorage
+                const success = this.setStorageItem(`udolingo_lesson_${lessonId}`, compressed);
                 if (!success) {
                     console.error('Failed to save lesson data');
                     return null;
@@ -118,6 +168,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 return lessonId;
             } catch (error) {
                 console.error('Error saving lesson:', error);
+                return null;
+            }
+        },
+
+        // Compress data using LZ-String
+        compressData(data) {
+            try {
+                const json = JSON.stringify(data);
+                return LZString144.compressToBase64(json);
+            } catch (error) {
+                console.error('Error compressing data:', error);
+                return null;
+            }
+        },
+
+        // Decompress data using LZ-String
+        decompressData(compressedData) {
+            try {
+                // Handle both compressed and uncompressed data for backward compatibility
+                if (typeof compressedData === 'string' && !compressedData.startsWith('{')) {
+                    // Looks like compressed data
+                    const decompressed = LZString144.decompressFromBase64(compressedData);
+                    return decompressed ? JSON.parse(decompressed) : null;
+                } else {
+                    // Looks like uncompressed JSON or already parsed object
+                    return typeof compressedData === 'string' ? JSON.parse(compressedData) : compressedData;
+                }
+            } catch (error) {
+                console.error('Error decompressing data:', error);
                 return null;
             }
         },
@@ -152,9 +231,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Get a specific saved lesson by ID (full data)
         getSavedLesson(id) {
             try {
-                const lessonData = this.getStorageItem(`udolingo_lesson_${id}`);
-                if (!lessonData) {
+                const compressedData = this.getStorageItem(`udolingo_lesson_${id}`);
+                if (!compressedData) {
                     console.log(`Lesson ${id} not found`);
+                    return null;
+                }
+                
+                const lessonData = this.decompressData(compressedData);
+                if (!lessonData) {
+                    console.error(`Failed to decompress lesson ${id}`);
                     return null;
                 }
                 
@@ -209,7 +294,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 lessonData.title = newTitle;
-                const dataSuccess = this.setStorageItem(`udolingo_lesson_${id}`, lessonData);
+                const compressed = this.compressData(lessonData);
+                if (!compressed) {
+                    console.error(`Failed to compress updated lesson data for ${id}`);
+                    return false;
+                }
+                
+                const dataSuccess = this.setStorageItem(`udolingo_lesson_${id}`, compressed);
                 if (!dataSuccess) {
                     console.error(`Failed to update lesson data for ${id}`);
                     return false;
@@ -240,9 +331,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // localStorage utility functions
         setStorageItem(key, value) {
             try {
-                const json = JSON.stringify(value);
-                localStorage.setItem(key, json);
-                console.log(`Stored ${key} with size: ${json.length} bytes`);
+                const dataToStore = typeof value === 'string' ? value : JSON.stringify(value);
+                localStorage.setItem(key, dataToStore);
+                console.log(`Stored ${key} with size: ${dataToStore.length} bytes`);
                 return true;
             } catch (error) {
                 if (error.name === 'QuotaExceededError') {
@@ -261,7 +352,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (item === null) {
                     return null;
                 }
-                return JSON.parse(item);
+                
+                // Try to parse as JSON, but return raw string if parsing fails
+                try {
+                    return JSON.parse(item);
+                } catch {
+                    return item; // Return as string (might be compressed data)
+                }
             } catch (error) {
                 console.error(`Error parsing localStorage item ${key}:`, error);
                 return null;
@@ -343,7 +440,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 Object.keys(savedLessons).forEach(id => {
                     const lessonData = this.getStorageItem(`udolingo_lesson_${id}`);
                     if (lessonData) {
-                        totalSize += JSON.stringify(lessonData).length;
+                        const dataSize = typeof lessonData === 'string' ? lessonData.length : JSON.stringify(lessonData).length;
+                        totalSize += dataSize;
                     }
                 });
                 
@@ -485,16 +583,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- UI Management ---
     const UI = {
         setButtonsDisabled(disabled) {
-            const buttonIds = ['submit', 'clear', 'next', 'shuffle', 'back', 'translate', 'vocab1', 'vocab2', 'mistakes'];
+            const buttonIds = ['submit', 'clear', 'next', 'shuffle', 'back', 'translate', 'vocab1', 'vocab2', 'mistakes', 'saveCurrent', 'share'];
             buttonIds.forEach(id => {
-                elements[id].disabled = disabled;
+                if (elements[id]) {
+                    elements[id].disabled = disabled;
+                }
             });
         },
 
-        setResponseButtonsDisabled(disabled) {
-            elements.submit.disabled = disabled;
-            elements.clear.disabled = disabled;
-            elements.back.disabled = disabled;
+        showResponseButtons() {
+            elements.submit.style.display = '';
+            elements.clear.style.display = '';
+            elements.back.style.display = '';
+            elements.next.textContent = "Skip";
+        },
+
+        hideResponseButtons() {
+            elements.submit.style.display = 'none';
+            elements.clear.style.display = 'none';
+            elements.back.style.display = 'none';
+            elements.next.textContent = "Next";
         },
 
         clearWordBank() {
@@ -524,6 +632,13 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.feedback.textContent = isCorrect ? 'Correct!' : '';
             elements.feedback.innerHTML = isCorrect ? 'Correct!' : feedbackText;
             elements.feedback.style.color = isCorrect ? 'green' : '';
+        },
+
+        // Enable/disable control buttons based on loaded config
+        updateControlButtons() {
+            const hasConfig = state.config && state.lessons && state.lessons.length > 0;
+            elements.saveCurrent.disabled = !hasConfig;
+            elements.share.disabled = !hasConfig;
         },
 
         // Tab management
@@ -649,9 +764,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show save button when valid config is detected
         showSaveButton(configData) {
             if (configData && configData.lessons && configData.lessons.length > 0) {
-                elements.saveConfig.style.display = 'inline-block';
+                elements.loadSaveConfig.disabled = false;
             } else {
-                elements.saveConfig.style.display = 'none';
+                elements.loadSaveConfig.disabled = true;
             }
         },
         
@@ -711,6 +826,7 @@ Estimated Quota: ${info.estimatedQuota}`;
             }
 
             UI.setButtonsDisabled(false);
+            UI.showResponseButtons();
             const lesson = state.lessons[index];
             const currentDirection = DirectionManager.getCurrentDirection(index);
             const lessonData = this.getCurrentLessonData(lesson, currentDirection);
@@ -748,7 +864,7 @@ Estimated Quota: ${info.estimatedQuota}`;
             const solution = Utils.removePunctuation(lessonData.solution);
             
             UI.clearWordBank();
-            UI.setResponseButtonsDisabled(true);
+            UI.hideResponseButtons();
 
             if (userResponse === solution) {
                 UI.showFeedback(true);
@@ -1027,6 +1143,7 @@ Estimated Quota: ${info.estimatedQuota}`;
             DirectionManager.initializeDirections();
             LessonManager.loadTask(state.currentTaskIndex);
             UI.updateVocabButtons(state.config["langA-B"]);
+            UI.updateControlButtons();
             MistakesManager.clearAllMistakes();
         },
 
@@ -1052,7 +1169,8 @@ Estimated Quota: ${info.estimatedQuota}`;
             }
         },
 
-        saveCurrentConfig() {
+        // Save current configuration to localStorage
+        savePastedConfig() {
             const configText = elements.configInput.value;
             if (!configText) {
                 alert("No configuration to save.");
@@ -1080,6 +1198,84 @@ Estimated Quota: ${info.estimatedQuota}`;
             } catch (error) {
                 alert(`Error parsing JSON: ${error.message}`);
             }
+        },
+
+        // Save currently loaded config
+        saveCurrentLoadedConfig() {
+            if (!state.config || !state.lessons || state.lessons.length === 0) {
+                alert("No configuration is currently loaded to save.");
+                return;
+            }
+            
+            try {
+                // Check storage health before saving
+                if (!StorageManager.checkStorageHealth()) {
+                    alert("Storage appears to be having issues. Please try again or check your browser settings.");
+                    return;
+                }
+                
+                const lessonId = StorageManager.saveLesson(state.config);
+                if (lessonId) {
+                    alert(`Lesson "${state.config.title}" saved successfully!`);
+                    console.log(`Lesson saved successfully! Id=${lessonId}`);
+                } else {
+                    alert("Failed to save lesson. Please try again or check if you have enough storage space.");
+                }
+            } catch (error) {
+                console.error('Error saving current config:', error);
+                alert(`Error saving lesson: ${error.message}`);
+            }
+        },
+
+        // Share current config via URL
+        shareCurrentConfig() {
+            if (!state.config || !state.lessons || state.lessons.length === 0) {
+                alert("No configuration is currently loaded to share.");
+                return;
+            }
+            
+            try {
+                const shareURL = URLHandler.generateShareURL(state.config);
+                if (shareURL) {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(shareURL).then(() => {
+                            alert('Share link copied to clipboard! You can now share this link with others.');
+                        }).catch(err => {
+                            console.error('Failed to copy to clipboard:', err);
+                            this.fallbackShareMethod(shareURL);
+                        });
+                    } else {
+                        this.fallbackShareMethod(shareURL);
+                    }
+                } else {
+                    alert("Failed to generate share URL. The configuration might be too large.");
+                }
+            } catch (error) {
+                console.error('Error sharing config:', error);
+                alert(`Error generating share link: ${error.message}`);
+            }
+        },
+
+        // Fallback share method for older browsers
+        fallbackShareMethod(shareURL) {
+            const textArea = document.createElement('textarea');
+            textArea.value = shareURL;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                alert('Share link copied to clipboard! You can now share this link with others.');
+            } catch (err) {
+                console.error('Fallback copy failed:', err);
+                prompt('Copy this link to share the lesson:', shareURL);
+            }
+            
+            document.body.removeChild(textArea);
         },
 
         loadSavedLesson(lessonId) {
@@ -1173,6 +1369,14 @@ Estimated Quota: ${info.estimatedQuota}`;
                 MistakesManager.showMistakesModal();
             });
 
+            elements.saveCurrent.addEventListener('click', () => {
+                ConfigManager.saveCurrentLoadedConfig();
+            });
+
+            elements.share.addEventListener('click', () => {
+                ConfigManager.shareCurrentConfig();
+            });
+
             // Configuration panel
             elements.openConfigPanel.addEventListener('click', () => {
                 elements.configPanel.style.display = 'flex';
@@ -1189,12 +1393,8 @@ Estimated Quota: ${info.estimatedQuota}`;
                 elements.configPanel.style.display = 'none';
             });
 
-            elements.loadConfig.addEventListener('click', () => {
-                ConfigManager.loadFromText();
-            });
-
-            elements.saveConfig.addEventListener('click', () => {
-                ConfigManager.saveCurrentConfig();
+            elements.loadSaveConfig.addEventListener('click', () => {
+                ConfigManager.savePastedConfig();
                 ConfigManager.loadFromText();
             });
 
@@ -1297,10 +1497,19 @@ Estimated Quota: ${info.estimatedQuota}`;
             },
             getSavedLessons: () => {
                 return StorageManager.getSavedLessons();
+            },
+            generateShareURL: (config) => {
+                return URLHandler.generateShareURL(config || state.config);
             }
         };
         
-        console.log('Debug functions available: udolingoDebug.clearAllLessons(), udolingoDebug.showStorageInfo(), udolingoDebug.getSavedLessons()');
+        console.log('Debug functions available: udolingoDebug.clearAllLessons(), udolingoDebug.showStorageInfo(), udolingoDebug.getSavedLessons(), udolingoDebug.generateShareURL()');
+        
+        // Check for config in URL parameters first
+        if (URLHandler.loadConfigFromURL()) {
+            console.log('Config loaded from URL parameter');
+            return;
+        }
         
         // Auto-load the latest saved lesson if any exist
         const savedLessons = StorageManager.getSavedLessons();

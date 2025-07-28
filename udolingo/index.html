@@ -6,37 +6,59 @@
     <title>Udolingo</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="udolingo-icon.png">
+    <script src="lz-string-1.4.4.js"></script>
 </head>
 <body>
-    <div class="container">
-        <div style="display: inline-flex; align-items: center; gap: 0.5rem">
-            <img alt="mascot" src="udolingo-icon.png" width="40" height="40" />
-            <h1>Udolingo Practice</h1>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <img alt="mascot" src="udolingo-icon.png" width="30" height="30" />
+                <h3>Control Panel</h3>
+            </div>
+            
+            <div class="sidebar-section">
+                <button id="open-config-panel-btn">Load Lesson</button>
+                <button id="shuffle-lessons-btn" disabled>Shuffle Lesson</button>
+                <button id="save-current-btn" disabled>Save Current</button>
+                <button id="share-btn" disabled>Share Current</button>
+            </div>
+            
+            <div class="sidebar-section">
+            </div>
+            
+            <div class="sidebar-section">
+                <button id="mistakes-btn" disabled>My Mistakes</button>
+                <button id="vocab1-btn" title="Open vocabulary" style="display: none">a → b 📖</button>
+                <button id="vocab2-btn" title="Open vocabulary" style="display: none">b → a 📖</button>
+            </div>
+
+            <div class="sidebar-section">
+                <button onclick="window.open('llm_prompt.txt', '_blank')">LLM Prompt</button>
+                <button onclick="window.open('config.html', '_blank')">Config Format</button>
+                <button onclick="window.open('config.json', '_blank')">Example Config</button>
+            </div>
         </div>
-        <div id="lesson-container">
-            <p id="prompt">Load a lesson to begin.</p>
-            <div id="response-container"></div>
-            <div id="word-bank-container"></div>
-            <p id="feedback"></p>
-            <button id="translate-btn" title="Open Google Translate for the prompt" disabled>Google Translate</button>
-            <button id="clear-btn" title="Clear response" disabled>Clear</button>
-            <button id="back-btn" title="Remove last word" disabled>Back</button>
-            <button id="submit-btn" disabled>Submit</button>
-        </div>
-        <div class="navigation-buttons">
-            <button id="open-config-panel-btn">Load Lessons</button>
-            <button id="shuffle-lessons-btn" disabled>Shuffle Lessons</button>
-            <button id="next-btn" disabled>Next</button>
-        </div>
-        <div class="navigation-buttons">
-            <button id="mistakes-btn" disabled>My mistakes</button>
-            <button id="vocab1-btn" title="Open vocabulary" style="display: none">a → b 📖</button>
-            <button id="vocab2-btn" title="Open vocabulary" style="display: none">b → a 📖</button>
-        </div>
-        <div class="config-example">
-            <a href="llm_prompt.txt" target="_blank">LLM prompt</a> | 
-            <a href="config.html" target="_blank">Config format</a> | 
-            <a href="config.json" target="_blank">Example config</a>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="container">
+                <div style="display: inline-flex; align-items: center; gap: 0.5rem">
+                    <img alt="mascot" src="udolingo-icon.png" width="40" height="40" />
+                    <h1>Udolingo Practice</h1>
+                </div>
+                <div id="lesson-container">
+                    <p id="prompt">Load a lesson to begin.</p>
+                    <div id="response-container"></div>
+                    <div id="word-bank-container"></div>
+                    <p id="feedback"></p>
+                    <button id="translate-btn">Google Translate</button>
+                    <button id="next-btn">Skip</button>
+                    <button id="clear-btn">Clear</button>
+                    <button id="back-btn">Back</button>
+                    <button id="submit-btn">Submit</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -54,8 +76,7 @@
             <div id="paste-tab" class="tab-content active">
                 <textarea id="config-input" placeholder="Paste your JSON configuration here..."></textarea>
                 <div class="modal-buttons">
-                    <button id="load-config-btn">Load</button>
-                    <button id="save-config-btn" style="display: none;">Load & Save</button>
+                    <button id="load-save-config-btn" disabled>Load</button>
                     <button id="cancel-config-btn">Cancel</button>
                 </div>
             </div>

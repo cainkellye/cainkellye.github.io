@@ -112,7 +112,19 @@ document.addEventListener('DOMContentLoaded', () => {
         noMistakesMsg: document.getElementById('no-mistakes-msg'),
         copyMistakes: document.getElementById('copy-mistakes-btn'),
         clearMistakes: document.getElementById('clear-mistakes-btn'),
-        closeMistakes: document.getElementById('close-mistakes-btn')
+        closeMistakes: document.getElementById('close-mistakes-btn'),
+        
+        // LLM Prompt Generator modal
+        generatePromptBtn: document.getElementById('generate-prompt-btn'),
+        llmPromptModal: document.getElementById('llm-prompt-modal'),
+        langAInput: document.getElementById('langA-input'),
+        langBInput: document.getElementById('langB-input'),
+        exercisesCount: document.getElementById('exercises-count'),
+        subjectInput: document.getElementById('subject-input'),
+        generatedPrompt: document.getElementById('generated-prompt'),
+        generatePromptTextBtn: document.getElementById('generate-prompt-text-btn'),
+        copyPromptBtn: document.getElementById('copy-prompt-btn'),
+        closeLlmPromptBtn: document.getElementById('close-llm-prompt-btn')
     };
 
     // --- Application State ---
@@ -1371,6 +1383,321 @@ Estimated Quota: ${info.estimatedQuota}`;
         }
     };
 
+    const LLMPromptGenerator = {
+        // Language codes compatible with Google Translate
+        languages: [
+            { code: 'af', name: 'Afrikaans' },
+            { code: 'sq', name: 'Albanian' },
+            { code: 'am', name: 'Amharic' },
+            { code: 'ar', name: 'Arabic' },
+            { code: 'hy', name: 'Armenian' },
+            { code: 'az', name: 'Azerbaijani' },
+            { code: 'eu', name: 'Basque' },
+            { code: 'be', name: 'Belarusian' },
+            { code: 'bn', name: 'Bengali' },
+            { code: 'bs', name: 'Bosnian' },
+            { code: 'bg', name: 'Bulgarian' },
+            { code: 'ca', name: 'Catalan' },
+            { code: 'ceb', name: 'Cebuano' },
+            { code: 'zh', name: 'Chinese (Simplified)' },
+            { code: 'zh-TW', name: 'Chinese (Traditional)' },
+            { code: 'co', name: 'Corsican' },
+            { code: 'hr', name: 'Croatian' },
+            { code: 'cs', name: 'Czech' },
+            { code: 'da', name: 'Danish' },
+            { code: 'nl', name: 'Dutch' },
+            { code: 'en', name: 'English' },
+            { code: 'eo', name: 'Esperanto' },
+            { code: 'et', name: 'Estonian' },
+            { code: 'fi', name: 'Finnish' },
+            { code: 'fr', name: 'French' },
+            { code: 'fy', name: 'Frisian' },
+            { code: 'gl', name: 'Galician' },
+            { code: 'ka', name: 'Georgian' },
+            { code: 'de', name: 'German' },
+            { code: 'el', name: 'Greek' },
+            { code: 'gu', name: 'Gujarati' },
+            { code: 'ht', name: 'Haitian Creole' },
+            { code: 'ha', name: 'Hausa' },
+            { code: 'haw', name: 'Hawaiian' },
+            { code: 'he', name: 'Hebrew' },
+            { code: 'hi', name: 'Hindi' },
+            { code: 'hmn', name: 'Hmong' },
+            { code: 'hu', name: 'Hungarian' },
+            { code: 'is', name: 'Icelandic' },
+            { code: 'ig', name: 'Igbo' },
+            { code: 'id', name: 'Indonesian' },
+            { code: 'ga', name: 'Irish' },
+            { code: 'it', name: 'Italian' },
+            { code: 'ja', name: 'Japanese' },
+            { code: 'jv', name: 'Javanese' },
+            { code: 'kn', name: 'Kannada' },
+            { code: 'kk', name: 'Kazakh' },
+            { code: 'km', name: 'Khmer' },
+            { code: 'rw', name: 'Kinyarwanda' },
+            { code: 'ko', name: 'Korean' },
+            { code: 'ku', name: 'Kurdish' },
+            { code: 'ky', name: 'Kyrgyz' },
+            { code: 'lo', name: 'Lao' },
+            { code: 'la', name: 'Latin' },
+            { code: 'lv', name: 'Latvian' },
+            { code: 'lt', name: 'Lithuanian' },
+            { code: 'lb', name: 'Luxembourgish' },
+            { code: 'mk', name: 'Macedonian' },
+            { code: 'mg', name: 'Malagasy' },
+            { code: 'ms', name: 'Malay' },
+            { code: 'ml', name: 'Malayalam' },
+            { code: 'mt', name: 'Maltese' },
+            { code: 'mi', name: 'Maori' },
+            { code: 'mr', name: 'Marathi' },
+            { code: 'mn', name: 'Mongolian' },
+            { code: 'my', name: 'Myanmar (Burmese)' },
+            { code: 'ne', name: 'Nepali' },
+            { code: 'no', name: 'Norwegian' },
+            { code: 'ny', name: 'Nyanja (Chichewa)' },
+            { code: 'or', name: 'Odia (Oriya)' },
+            { code: 'ps', name: 'Pashto' },
+            { code: 'fa', name: 'Persian' },
+            { code: 'pl', name: 'Polish' },
+            { code: 'pt', name: 'Portuguese (Brazilian)' },
+            { code: 'pt-PT', name: 'Portuguese (European)' },
+            { code: 'pa', name: 'Punjabi' },
+            { code: 'ro', name: 'Romanian' },
+            { code: 'ru', name: 'Russian' },
+            { code: 'sm', name: 'Samoan' },
+            { code: 'gd', name: 'Scots Gaelic' },
+            { code: 'sr', name: 'Serbian' },
+            { code: 'st', name: 'Sesotho' },
+            { code: 'sn', name: 'Shona' },
+            { code: 'sd', name: 'Sindhi' },
+            { code: 'si', name: 'Sinhala (Sinhalese)' },
+            { code: 'sk', name: 'Slovak' },
+            { code: 'sl', name: 'Slovenian' },
+            { code: 'so', name: 'Somali' },
+            { code: 'es', name: 'Spanish' },
+            { code: 'su', name: 'Sundanese' },
+            { code: 'sw', name: 'Swahili' },
+            { code: 'sv', name: 'Swedish' },
+            { code: 'tl', name: 'Tagalog (Filipino)' },
+            { code: 'tg', name: 'Tajik' },
+            { code: 'ta', name: 'Tamil' },
+            { code: 'tt', name: 'Tatar' },
+            { code: 'te', name: 'Telugu' },
+            { code: 'th', name: 'Thai' },
+            { code: 'tr', name: 'Turkish' },
+            { code: 'tk', name: 'Turkmen' },
+            { code: 'uk', name: 'Ukrainian' },
+            { code: 'ur', name: 'Urdu' },
+            { code: 'ug', name: 'Uyghur' },
+            { code: 'uz', name: 'Uzbek' },
+            { code: 'vi', name: 'Vietnamese' },
+            { code: 'cy', name: 'Welsh' },
+            { code: 'xh', name: 'Xhosa' },
+            { code: 'yi', name: 'Yiddish' },
+            { code: 'yo', name: 'Yoruba' },
+            { code: 'zu', name: 'Zulu' }
+        ],
+
+        // Common subjects/themes for language learning
+        subjects: [
+            'general conversation',
+            'office and workplace',
+            'farm and agriculture',
+            'shopping and retail',
+            'groceries and food',
+            'parties and celebrations',
+            'vacation and travel',
+            'sports and fitness',
+            'family and relationships',
+            'health and medicine',
+            'education and school',
+            'technology and computers',
+            'restaurants and dining',
+            'transportation',
+            'weather and seasons',
+            'hobbies and leisure',
+            'business and finance',
+            'home and household',
+            'clothing and fashion',
+            'nature and environment',
+            'culture and arts',
+            'news and current events',
+            'science and research',
+            'law and government',
+            'religion and philosophy'
+        ],
+
+        // Initialize the language and subject dropdowns
+        initializeDropdowns() {
+            const langAList = document.getElementById('languages-listA');
+            const langBList = document.getElementById('languages-listB');
+            const subjectsList = document.getElementById('subjects-list');
+
+            // Populate language options
+            this.languages.forEach(lang => {
+                const optionA = document.createElement('option');
+                optionA.value = lang.code;
+                optionA.textContent = `${lang.code} - ${lang.name}`;
+                langAList.appendChild(optionA);
+
+                const optionB = document.createElement('option');
+                optionB.value = lang.code;
+                optionB.textContent = `${lang.code} - ${lang.name}`;
+                langBList.appendChild(optionB);
+            });
+
+            // Populate subjects
+            this.subjects.forEach(subject => {
+                const option = document.createElement('option');
+                option.value = subject;
+                subjectsList.appendChild(option);
+            });
+        },
+
+        // Get language name from code
+        getLanguageName(code) {
+            const lang = this.languages.find(l => l.code === code);
+            return lang ? lang.name : code;
+        },
+
+        // Extract language code from input (handles both "code" and "code - name" formats)
+        extractLanguageCode(input) {
+            if (!input) return '';
+            // If input contains " - ", extract the part before it
+            const parts = input.split(' - ');
+            return parts[0].trim();
+        },
+
+        // Generate difficulty-specific instructions
+        getDifficultyInstructions(level) {
+            switch(level) {
+                case '1':
+                    return 'Use simple vocabulary, basic sentence structures, present tense, and common everyday expressions. Avoid complex grammar and idioms.';
+                case '2':
+                    return 'Use elementary vocabulary with simple past and future tenses. Include basic adjectives and common phrases.';
+                case '3':
+                    return 'Use intermediate vocabulary with various tenses, conditional sentences, and some idiomatic expressions.';
+                case '4':
+                    return 'Use advanced vocabulary, complex sentence structures, subjunctive mood, and challenging idiomatic expressions.';
+                case '5':
+                    return 'Use expert-level vocabulary, complex grammar structures, subtle nuances, literary expressions, and sophisticated language traps.';
+                default:
+                    return 'Use intermediate level vocabulary and grammar.';
+            }
+        },
+
+        // Generate noise instructions
+        getNoiseInstructions(noiseLevel) {
+            switch(noiseLevel) {
+                case 'low':
+                    return 'Include 2-3 distractor words for each language.';
+                case 'average':
+                    return 'Include 3-4 distractor words for each language.';
+                case 'high':
+                    return 'Include 5-6 distractor words for each language.';
+                case 'auto':
+                default:
+                    return 'Distractor words are optional and will be auto-generated if not provided.';
+            }
+        },
+
+        // Generate the complete LLM prompt
+        generatePrompt() {
+            const langACode = this.extractLanguageCode(elements.langAInput.value);
+            const langBCode = this.extractLanguageCode(elements.langBInput.value);
+            const langAName = this.getLanguageName(langACode);
+            const langBName = this.getLanguageName(langBCode);
+            const exerciseCount = elements.exercisesCount.value || '20';
+            const subject = elements.subjectInput.value || 'general conversation';
+            
+            const difficultyLevel = document.querySelector('input[name="difficulty"]:checked')?.value || '3';
+            const noiseLevel = document.querySelector('input[name="noise"]:checked')?.value || 'auto';
+            
+            const difficultyInstructions = this.getDifficultyInstructions(difficultyLevel);
+            const noiseInstructions = this.getNoiseInstructions(noiseLevel);
+
+            const prompt = `Generate a JSON object for a bilingual lesson in the following format:
+
+{
+  "title": <string>,
+  "langA-B": ["${langACode}", "${langBCode}"],
+  "exercises": [
+    {
+      "A": <sentence in ${langAName}>,
+      "B": <exact translation in ${langBName}>,
+      "noiseA": <space-separated distractor words for ${langAName}>,
+      "noiseB": <space-separated distractor words for ${langBName}>
+    },
+    // ...more exercises
+  ]
+}
+
+Instructions:
+- Generate ${exerciseCount} exercises total.
+- Theme/Subject: ${subject}
+- Difficulty Level: ${difficultyLevel}/5 - ${difficultyInstructions}
+- Noise: distractors should fit phonetically or semantically, but not contain any words from the actual sentence/translation
+- ${noiseInstructions}
+- Create a descriptive title that reflects the theme and difficulty level
+- Output valid JSON in the format above.`;
+
+            elements.generatedPrompt.value = prompt;
+        },
+
+        // Show the LLM prompt modal
+        showModal() {
+            elements.llmPromptModal.style.display = 'flex';
+            this.generatePrompt(); // Generate initial prompt
+        },
+
+        // Hide the LLM prompt modal
+        hideModal() {
+            elements.llmPromptModal.style.display = 'none';
+        },
+
+        // Copy prompt to clipboard
+        copyToClipboard() {
+            const prompt = elements.generatedPrompt.value;
+            if (!prompt) {
+                alert('No prompt to copy. Please generate a prompt first.');
+                return;
+            }
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(prompt).then(() => {
+                    alert('LLM prompt copied to clipboard!');
+                }).catch(err => {
+                    console.error('Failed to copy to clipboard:', err);
+                    this.fallbackCopyToClipboard(prompt);
+                });
+            } else {
+                this.fallbackCopyToClipboard(prompt);
+            }
+        },
+
+        // Fallback copy method for older browsers
+        fallbackCopyToClipboard(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                alert('LLM prompt copied to clipboard!');
+            } catch (err) {
+                console.error('Fallback copy failed:', err);
+                alert('Copy failed. Please manually copy the text from the prompt area.');
+            }
+            
+            document.body.removeChild(textArea);
+        }
+    };
+
     // --- Event Handlers ---
     const EventHandlers = {
         setupEventListeners() {
@@ -1530,6 +1857,45 @@ Estimated Quota: ${info.estimatedQuota}`;
                 if (confirm('Are you sure you want to clear all recorded mistakes? This cannot be undone.')) {
                     MistakesManager.clearAllMistakes();
                     MistakesManager.refreshMistakesList();
+                }
+            });
+
+            // LLM Prompt Generator event handlers
+            elements.generatePromptBtn.addEventListener('click', () => {
+                LLMPromptGenerator.initializeDropdowns();
+                LLMPromptGenerator.showModal();
+            });
+
+            elements.closeLlmPromptBtn.addEventListener('click', () => {
+                LLMPromptGenerator.hideModal();
+            });
+
+            elements.generatePromptTextBtn.addEventListener('click', () => {
+                LLMPromptGenerator.generatePrompt();
+            });
+
+            elements.copyPromptBtn.addEventListener('click', () => {
+                LLMPromptGenerator.copyToClipboard();
+            });
+
+            // Auto-generate prompt when inputs change
+            const promptInputs = [
+                elements.langAInput,
+                elements.langBInput,
+                elements.exercisesCount,
+                elements.subjectInput
+            ];
+
+            promptInputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    LLMPromptGenerator.generatePrompt();
+                });
+            });
+
+            // Auto-generate prompt when radio buttons change
+            document.addEventListener('change', (e) => {
+                if (e.target.type === 'radio' && (e.target.name === 'difficulty' || e.target.name === 'noise')) {
+                    LLMPromptGenerator.generatePrompt();
                 }
             });
         }

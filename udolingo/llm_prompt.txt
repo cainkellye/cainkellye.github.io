@@ -16,13 +16,16 @@ Generate a JSON object for a bilingual lesson in the following format:
 
 Instructions:
 - Generate 20 exercises total.
-- Language A is English and language B is Portuguese.
-- Use difficult content: uncommon verb tenses, idiomatic expressions, subtle grammar traps
+- Language A is English (en) and language B is Portuguese (pt).
+- Theme/Subject: general conversation
+- Difficulty Level: 3/5 - Use intermediate vocabulary with various tenses, conditional sentences, and some idiomatic expressions.
+- Distractor words are optional and will be auto-generated if not provided.
 - For each exercise, provide:
   - "A": the sentence in language A
   - "B": the translation in language B
-  - "noiseA": space-separated distractor words for language A (optional, 1-5 words, do not repeat words from the sentence)
-  - "noiseB": space-separated distractor words for language B (optional, 1-5 words, do not repeat words from the translation)
+  - "noiseA": space-separated distractor words for language A (optional, do not repeat words from the sentence)
+  - "noiseB": space-separated distractor words for language B (optional, do not repeat words from the translation)
 - Distractors should fit phonetically or semantically, but not contain any words from the actual sentence/translation
+- Create a descriptive title that reflects the theme and difficulty level
 - Output valid JSON in the format above.
 

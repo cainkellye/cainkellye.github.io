@@ -34,7 +34,7 @@
             </div>
 
             <div class="sidebar-section">
-                <button onclick="window.open('llm_prompt.txt', '_blank')">LLM Prompt</button>
+                <button id="generate-prompt-btn">Generate LLM Prompt</button>
                 <button onclick="window.open('config.html', '_blank')">Config Format</button>
                 <button id="current-config-btn">Current Config</button>
             </div>
@@ -118,6 +118,101 @@
                 <button id="copy-mistakes-btn" style="display: none;">Copy for LLM</button>
                 <button id="clear-mistakes-btn" style="display: none;">Clear All</button>
                 <button id="close-mistakes-btn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LLM Prompt Generator modal -->
+    <div id="llm-prompt-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content large-modal">
+            <h3>Generate LLM Prompt</h3>
+            
+            <div class="llm-config-grid">
+                <!-- Language A Selection -->
+                <div class="config-group">
+                    <label for="langA-select">Language A:</label>
+                    <div class="combobox-container">
+                        <input type="text" id="langA-input" list="languages-listA" placeholder="Type or select..." value="en">
+                        <datalist id="languages-listA"></datalist>
+                    </div>
+                </div>
+
+                <!-- Language B Selection -->
+                <div class="config-group">
+                    <label for="langB-select">Language B:</label>
+                    <div class="combobox-container">
+                        <input type="text" id="langB-input" list="languages-listB" placeholder="Type or select..." value="pt">
+                        <datalist id="languages-listB"></datalist>
+                    </div>
+                </div>
+
+                <!-- Number of Exercises -->
+                <div class="config-group">
+                    <label for="exercises-count">Number of Exercises:</label>
+                    <input type="number" id="exercises-count" min="1" max="100" value="20">
+                </div>
+
+                <!-- Difficulty Level -->
+                <div class="config-group">
+                    <label>Difficulty Level:</label>
+                    <div class="difficulty-radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="difficulty" value="1"> 1 - Beginner
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="difficulty" value="2"> 2 - Elementary
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="difficulty" value="3" checked> 3 - Intermediate
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="difficulty" value="4"> 4 - Advanced
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="difficulty" value="5"> 5 - Expert
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Subject/Theme -->
+                <div class="config-group">
+                    <label for="subject-input">Subject/Theme:</label>
+                    <div class="combobox-container">
+                        <input type="text" id="subject-input" list="subjects-list" placeholder="Type or select..." value="general conversation">
+                        <datalist id="subjects-list"></datalist>
+                    </div>
+                </div>
+
+                <!-- Noise Level -->
+                <div class="config-group">
+                    <label>Noise Level:</label>
+                    <div class="noise-radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="noise" value="auto" checked> Auto
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="noise" value="low"> Low (1-2 words)
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="noise" value="average"> Average (3-4 words)
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="noise" value="high"> High (5-6 words)
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Generated Prompt Output -->
+            <div class="config-group">
+                <label for="generated-prompt">Generated LLM Prompt:</label>
+                <textarea id="generated-prompt" readonly rows="12"></textarea>
+            </div>
+
+            <div class="modal-buttons">
+                <button id="generate-prompt-text-btn">Generate Prompt</button>
+                <button id="copy-prompt-btn">Copy to Clipboard</button>
+                <button id="close-llm-prompt-btn">Close</button>
             </div>
         </div>
     </div>

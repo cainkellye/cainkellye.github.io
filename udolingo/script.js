@@ -15,7 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const decompressed = LZString144.decompressFromEncodedURIComponent(compressedConfig);
                     if (decompressed) {
                         const config = JSON.parse(decompressed);
-                        if (config && config.lessons) {
+                        // Handle backward compatibility: accept both "exercises" and "lessons"
+                        if (config && (config.exercises || config.lessons)) {
                             console.log('Loading config from URL parameter...');
                             ConfigManager.loadConfiguration(config);
                             return true;
@@ -56,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
         back: document.getElementById('back-btn'),
         next: document.getElementById('next-btn'),
         translate: document.getElementById('translate-btn'),
-        shuffle: document.getElementById('shuffle-lessons-btn'),
+        shuffle: document.getElementById('shuffle-exercises-btn'),
         vocab1: document.getElementById('vocab1-btn'),
         vocab2: document.getElementById('vocab2-btn'),
         mistakes: document.getElementById('mistakes-btn'),
@@ -102,12 +103,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Application State ---
     const state = {
         currentTaskIndex: 0,
-        lessons: [],
+        exercises: [],
         config: null,
         prevResponses: [],
         promptLang: '',
         solutionLang: '',
-        lessonDirections: [], // Array to track direction for each lesson
+        exerciseDirections: [], // Array to track direction for each exercise
         currentCycle: 0, // Track which cycle we're on (0: first direction, 1: second direction)
         currentRenameId: null, // Track which lesson is being renamed
         mistakes: [] // Track user mistakes
@@ -121,15 +122,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const lessonId = Date.now().toString();
             console.log('Saving lesson with ID:', lessonId);
             
+            // Ensure we're using the new format before saving
+            let configToSave = { ...config };
+            if (configToSave.lessons && !configToSave.exercises) {
+                console.log('Converting legacy "lessons" to "exercises" before saving');
+                configToSave.exercises = configToSave.lessons;
+                delete configToSave.lessons;
+            }
+            
             // Create a saveable lesson object
             const lessonToSave = {
                 id: lessonId,
-                title: config.title || 'Untitled Lesson',
-                langCode: config["langA-B"] ? config["langA-B"].join('-') : 'unknown',
-                languages: config["langA-B"] || ['?', '?'],
-                config: config,
+                title: configToSave.title || 'Untitled Lesson',
+                langCode: configToSave["langA-B"] ? configToSave["langA-B"].join('-') : 'unknown',
+                languages: configToSave["langA-B"] || ['?', '?'],
+                config: configToSave,
                 dateAdded: new Date().toISOString(),
-                lessonCount: config.lessons ? config.lessons.length : 0
+                exerciseCount: configToSave.exercises ? configToSave.exercises.length : 0
             };
             
             try {
@@ -154,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     langCode: lessonToSave.langCode,
                     languages: lessonToSave.languages,
                     dateAdded: lessonToSave.dateAdded,
-                    lessonCount: lessonToSave.lessonCount
+                    exerciseCount: lessonToSave.exerciseCount
                 };
                 
                 const indexSuccess = this.setSavedLessonsIndex(savedLessons);
@@ -493,13 +502,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Direction Management ---
     const DirectionManager = {
-        // Initialize randomized directions for all lessons
+        // Initialize randomized directions for all exercises
         initializeDirections() {
-            if (state.lessons.length === 0) return;
+            if (state.exercises.length === 0) return;
             
             // Create array with half AtoB and half BtoA, then shuffle
             const directions = [];
-            const halfLength = Math.floor(state.lessons.length / 2);
+            const halfLength = Math.floor(state.exercises.length / 2);
             
             // Add AtoB directions
             for (let i = 0; i < halfLength; i++) {
@@ -507,24 +516,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // Add BtoA for the rest
-            for (let i = halfLength; i < state.lessons.length; i++) {
+            for (let i = halfLength; i < state.exercises.length; i++) {
                 directions.push('BtoA');
             }
             
             // Shuffle the directions
             Utils.shuffleArray(directions);
-            state.lessonDirections = directions;
+            state.exerciseDirections = directions;
             state.currentCycle = 0;
         },
 
-        // Get current direction for a lesson
-        getCurrentDirection(lessonIndex) {
-            if (state.lessonDirections.length === 0) {
+        // Get current direction for an exercise
+        getCurrentDirection(exerciseIndex) {
+            if (state.exerciseDirections.length === 0) {
                 this.initializeDirections();
             }
             
             // In the second cycle, flip the direction
-            const baseDirection = state.lessonDirections[lessonIndex];
+            const baseDirection = state.exerciseDirections[exerciseIndex];
             if (state.currentCycle === 1) {
                 return baseDirection === 'AtoB' ? 'BtoA' : 'AtoB';
             }
@@ -637,7 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Enable/disable control buttons based on loaded config
         updateControlButtons() {
-            const hasConfig = state.config && state.lessons && state.lessons.length > 0;
+            const hasConfig = state.config && state.exercises && state.exercises.length > 0;
             elements.saveCurrent.disabled = !hasConfig;
             elements.share.disabled = !hasConfig;
         },
@@ -694,7 +703,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const details = document.createElement('div');
             details.className = 'lesson-details';
             const dateAdded = new Date(lesson.dateAdded).toLocaleDateString();
-            details.textContent = `${lesson.languages[0]} ↔ ${lesson.languages[1]} • ${lesson.lessonCount} lessons • ${dateAdded}`;
+            details.textContent = `${lesson.languages[0]} ↔ ${lesson.languages[1]} • ${lesson.exerciseCount} exercises • ${dateAdded}`;
             
             info.appendChild(title);
             info.appendChild(details);
@@ -764,7 +773,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Show save button when valid config is detected
         showSaveButton(configData) {
-            if (configData && configData.lessons && configData.lessons.length > 0) {
+            if (configData && configData.exercises && configData.exercises.length > 0) {
                 elements.loadSaveConfig.disabled = false;
             } else {
                 elements.loadSaveConfig.disabled = true;
@@ -786,22 +795,22 @@ Estimated Quota: ${info.estimatedQuota}`;
         }
     };
 
-    // --- Lesson Management ---
-    const LessonManager = {
-        getCurrentLessonData(lesson, direction) {
+    // --- Exercise Management ---
+    const ExerciseManager = {
+        getCurrentExerciseData(exercise, direction) {
             if (direction === 'AtoB') {
                 return {
-                    prompt: lesson.A,
-                    solution: lesson.B,
-                    noise: lesson.noiseB || this.generateNoise('B', 6, lesson.B),
+                    prompt: exercise.A,
+                    solution: exercise.B,
+                    noise: exercise.noiseB || this.generateNoise('B', 6, exercise.B),
                     promptLang: state.config["langA-B"] ? state.config["langA-B"][0] : '',
                     solutionLang: state.config["langA-B"] ? state.config["langA-B"][1] : ''
                 };
             } else {
                 return {
-                    prompt: lesson.B,
-                    solution: lesson.A,
-                    noise: lesson.noiseA || this.generateNoise('A', 6, lesson.A),
+                    prompt: exercise.B,
+                    solution: exercise.A,
+                    noise: exercise.noiseA || this.generateNoise('A', 6, exercise.A),
                     promptLang: state.config["langA-B"] ? state.config["langA-B"][1] : '',
                     solutionLang: state.config["langA-B"] ? state.config["langA-B"][0] : ''
                 };
@@ -820,28 +829,28 @@ Estimated Quota: ${info.estimatedQuota}`;
         },
 
         loadTask(index) {
-            if (!state.lessons || state.lessons.length === 0) {
-                elements.prompt.textContent = "No lessons loaded.";
+            if (!state.exercises || state.exercises.length === 0) {
+                elements.prompt.textContent = "No exercises loaded.";
                 UI.setButtonsDisabled(true);
                 return;
             }
 
             UI.setButtonsDisabled(false);
             UI.showResponseButtons();
-            const lesson = state.lessons[index];
+            const exercise = state.exercises[index];
             const currentDirection = DirectionManager.getCurrentDirection(index);
-            const lessonData = this.getCurrentLessonData(lesson, currentDirection);
+            const exerciseData = this.getCurrentExerciseData(exercise, currentDirection);
             
-            state.promptLang = lessonData.promptLang;
-            state.solutionLang = lessonData.solutionLang;
+            state.promptLang = exerciseData.promptLang;
+            state.solutionLang = exerciseData.solutionLang;
 
-            // Display lesson counter and prompt
-            const lessonNumber = index + 1;
-            const totalLessons = state.lessons.length;
-            elements.prompt.textContent = `${lessonNumber}/${totalLessons}. Translate this: "${lessonData.prompt}"`;
+            // Display exercise counter and prompt
+            const exerciseNumber = index + 1;
+            const totalExercises = state.exercises.length;
+            elements.prompt.textContent = `${exerciseNumber}/${totalExercises}. Translate this: "${exerciseData.prompt}"`;
 
             // Create word bank
-            const words = Utils.removeDuplicates(Utils.splitSentenceWithoutPunctuation(lessonData.solution + ' ' + lessonData.noise));
+            const words = Utils.removeDuplicates(Utils.splitSentenceWithoutPunctuation(exerciseData.solution + ' ' + exerciseData.noise));
             Utils.shuffleArray(words);
 
             UI.clearWordBank();
@@ -861,8 +870,8 @@ Estimated Quota: ${info.estimatedQuota}`;
     const AnswerValidator = {
         validateAnswer(userResponse) {
             const currentDirection = DirectionManager.getCurrentDirection(state.currentTaskIndex);
-            const lessonData = LessonManager.getCurrentLessonData(state.lessons[state.currentTaskIndex], currentDirection);
-            const solution = Utils.removePunctuation(lessonData.solution);
+            const exerciseData = ExerciseManager.getCurrentExerciseData(state.exercises[state.currentTaskIndex], currentDirection);
+            const solution = Utils.removePunctuation(exerciseData.solution);
             
             UI.clearWordBank();
             UI.hideResponseButtons();
@@ -874,7 +883,7 @@ Estimated Quota: ${info.estimatedQuota}`;
 
             // Record the mistake
             MistakesManager.recordMistake(
-                lessonData.prompt,
+                exerciseData.prompt,
                 solution,
                 userResponse,
                 state.currentTaskIndex,
@@ -926,14 +935,14 @@ Estimated Quota: ${info.estimatedQuota}`;
     const VocabularyManager = {
         generateVocabulary(lang, limit) { // lang = 'A' or 'B'
             const words = [];
-            state.lessons.forEach(lesson => {
-                const sentence = lang === 'A' ? lesson.A : lesson.B;
+            state.exercises.forEach(exercise => {
+                const sentence = lang === 'A' ? exercise.A : exercise.B;
                 if (sentence) {
-                    const lessonWords = Utils.splitSentenceWithoutPunctuation(sentence);
+                    const exerciseWords = Utils.splitSentenceWithoutPunctuation(sentence);
                     if (limit == 0) {
-                        words.push(...lessonWords);
+                        words.push(...exerciseWords);
                     } else {
-                        lessonWords.forEach(word => {
+                        exerciseWords.forEach(word => {
                             if (word.length >= limit) {
                                 words.push(word);
                             }});
@@ -957,8 +966,8 @@ Estimated Quota: ${info.estimatedQuota}`;
     const TranslationManager = {
         openTranslation() {
             const currentDirection = DirectionManager.getCurrentDirection(state.currentTaskIndex);
-            const lessonData = LessonManager.getCurrentLessonData(state.lessons[state.currentTaskIndex], currentDirection);
-            const encodedPrompt = encodeURIComponent(lessonData.prompt);
+            const exerciseData = ExerciseManager.getCurrentExerciseData(state.exercises[state.currentTaskIndex], currentDirection);
+            const encodedPrompt = encodeURIComponent(exerciseData.prompt);
             
             let translateUrl;
             if (!state.promptLang || !state.solutionLang) {
@@ -973,18 +982,19 @@ Estimated Quota: ${info.estimatedQuota}`;
 
     // --- Mistakes Management ---
     const MistakesManager = {
-        recordMistake(prompt, solution, userResponse, lessonIndex, direction) {
+        recordMistake(prompt, solution, userResponse, exerciseIndex, direction) {
             const mistake = {
                 id: Date.now(),
                 prompt: prompt,
                 solution: solution,
                 userResponse: userResponse,
-                lessonIndex: lessonIndex,
+                exerciseIndex: exerciseIndex,
                 direction: direction,
             };
             
             state.mistakes.push(mistake);
             console.log('Mistake recorded:', mistake);
+            // TODO Show number of mistakes on button
         },
         
         clearAllMistakes() {
@@ -1015,17 +1025,17 @@ Estimated Quota: ${info.estimatedQuota}`;
             elements.copyMistakes.style.display = 'inline-block';
             elements.clearMistakes.style.display = 'inline-block';
             
-            // Group mistakes by lesson and direction for better organization
-            const groupedMistakes = this.groupMistakesByLesson();
+            // Group mistakes by exercise and direction for better organization
+            const groupedMistakes = this.groupMistakesByExercise();
             
             Object.keys(groupedMistakes).forEach(key => {
                 const mistakes = groupedMistakes[key];
-                const [lessonIndex, direction] = key.split('_');
+                const [exerciseIndex, direction] = key.split('_');
                 
-                // Create a section for this lesson/direction
+                // Create a section for this exercise/direction
                 const sectionHeader = document.createElement('div');
                 sectionHeader.className = 'mistake-section-header';
-                sectionHeader.innerHTML = `<h4>Lesson ${parseInt(lessonIndex) + 1} (${direction === 'AtoB' ? state.config["langA-B"][0] + ' → ' + state.config["langA-B"][1] : state.config["langA-B"][1] + ' → ' + state.config["langA-B"][0]})</h4>`;
+                sectionHeader.innerHTML = `<h4>Exercise ${parseInt(exerciseIndex) + 1} (${direction === 'AtoB' ? state.config["langA-B"][0] + ' → ' + state.config["langA-B"][1] : state.config["langA-B"][1] + ' → ' + state.config["langA-B"][0]})</h4>`;
                 elements.mistakesList.appendChild(sectionHeader);
                 
                 mistakes.forEach(mistake => {
@@ -1035,11 +1045,11 @@ Estimated Quota: ${info.estimatedQuota}`;
             });
         },
         
-        // Group mistakes by lesson and direction
-        groupMistakesByLesson() {
+        // Group mistakes by exercise and direction
+        groupMistakesByExercise() {
             const grouped = {};
             state.mistakes.forEach(mistake => {
-                const key = `${mistake.lessonIndex}_${mistake.direction}`;
+                const key = `${mistake.exerciseIndex}_${mistake.direction}`;
                 if (!grouped[key]) {
                     grouped[key] = [];
                 }
@@ -1085,7 +1095,7 @@ Estimated Quota: ${info.estimatedQuota}`;
                     ? `${state.config["langA-B"][0]} → ${state.config["langA-B"][1]}`
                     : `${state.config["langA-B"][1]} → ${state.config["langA-B"][0]}`;
                 
-                text += `${index + 1}. [${directionText}] Lesson ${mistake.lessonIndex + 1}\n`;
+                text += `${index + 1}. [${directionText}] Exercise ${mistake.exerciseIndex + 1}\n`;
                 text += `   Prompt: "${mistake.prompt}"\n`;
                 text += `   Correct: "${mistake.solution}"\n`;
                 text += `   My answer: "${mistake.userResponse}"\n\n`;
@@ -1138,11 +1148,18 @@ Estimated Quota: ${info.estimatedQuota}`;
     // --- Configuration Management ---
     const ConfigManager = {
         loadConfiguration(configData) {
+            // Handle backward compatibility: convert "lessons" to "exercises"
+            if (configData.lessons && !configData.exercises) {
+                console.log('Converting legacy "lessons" format to "exercises"');
+                configData.exercises = configData.lessons;
+                delete configData.lessons;
+            }
+            
             state.config = configData;
-            state.lessons = configData.lessons;
+            state.exercises = configData.exercises;
             state.currentTaskIndex = 0;
             DirectionManager.initializeDirections();
-            LessonManager.loadTask(state.currentTaskIndex);
+            ExerciseManager.loadTask(state.currentTaskIndex);
             UI.updateVocabButtons(state.config["langA-B"]);
             UI.updateControlButtons();
             MistakesManager.clearAllMistakes();
@@ -1157,13 +1174,13 @@ Estimated Quota: ${info.estimatedQuota}`;
             
             try {
                 const newConfig = JSON.parse(configText);
-                if (newConfig && newConfig.lessons) {
+                if (newConfig && newConfig.exercises) {
                     this.loadConfiguration(newConfig);
                     UI.showSaveButton(newConfig);
                     elements.configInput.value = '';
                     elements.configPanel.style.display = 'none';
                 } else {
-                    alert("Invalid configuration format. Make sure it has a 'lessons' property.");
+                    alert("Invalid configuration format. Make sure it has an 'exercises' property.");
                 }
             } catch (error) {
                 alert(`Error parsing JSON: ${error.message}`);
@@ -1180,7 +1197,12 @@ Estimated Quota: ${info.estimatedQuota}`;
             
             try {
                 const configData = JSON.parse(configText);
-                if (configData && configData.lessons) {
+                // Handle backward compatibility
+                if (configData && configData.lessons && !configData.exercises) {
+                    configData.exercises = configData.lessons;
+                    delete configData.lessons;
+                }
+                if (configData && configData.exercises) {
                     // Check storage health before saving
                     if (!StorageManager.checkStorageHealth()) {
                         alert("Storage appears to be having issues. Please try again or check your browser settings.");
@@ -1194,7 +1216,7 @@ Estimated Quota: ${info.estimatedQuota}`;
                         alert("Failed to save lesson. Please try again or check if you have enough storage space.");
                     }
                 } else {
-                    alert("Invalid configuration format. Make sure it has a 'lessons' property.");
+                    alert("Invalid configuration format. Make sure it has an 'exercises' property.");
                 }
             } catch (error) {
                 alert(`Error parsing JSON: ${error.message}`);
@@ -1203,7 +1225,7 @@ Estimated Quota: ${info.estimatedQuota}`;
 
         // Save currently loaded config
         saveCurrentLoadedConfig() {
-            if (!state.config || !state.lessons || state.lessons.length === 0) {
+            if (!state.config || !state.exercises || state.exercises.length === 0) {
                 alert("No configuration is currently loaded to save.");
                 return;
             }
@@ -1230,7 +1252,7 @@ Estimated Quota: ${info.estimatedQuota}`;
 
         // Share current config via URL
         shareCurrentConfig() {
-            if (!state.config || !state.lessons || state.lessons.length === 0) {
+            if (!state.config || !state.exercises || state.exercises.length === 0) {
                 alert("No configuration is currently loaded to share.");
                 return;
             }
@@ -1309,6 +1331,7 @@ Estimated Quota: ${info.estimatedQuota}`;
             if (lesson) {
                 this.loadConfiguration(lesson.config);
                 elements.configPanel.style.display = 'none';
+                // TODO: remove query string
             } else {
                 alert("Lesson not found.");
             }
@@ -1357,22 +1380,22 @@ Estimated Quota: ${info.estimatedQuota}`;
 
             // Navigation
             elements.next.addEventListener('click', () => {
-                state.currentTaskIndex = (state.currentTaskIndex + 1) % state.lessons.length;
+                state.currentTaskIndex = (state.currentTaskIndex + 1) % state.exercises.length;
                 
                 // Check if we need to advance to the next cycle
                 if (state.currentTaskIndex === 0) {
                     DirectionManager.checkAndAdvanceCycle();
                 }
                 
-                LessonManager.loadTask(state.currentTaskIndex);
+                ExerciseManager.loadTask(state.currentTaskIndex);
             });
 
             elements.shuffle.addEventListener('click', () => {
-                if (state.mistakes.length == 0 || confirm('This will clear the mistakes list. Are you sure you want to shuffle lessons?')) {
-                    Utils.shuffleArray(state.lessons);
+                if (state.mistakes.length == 0 || confirm('This will clear the mistakes list. Are you sure you want to shuffle exercises?')) {
+                    Utils.shuffleArray(state.exercises);
                     DirectionManager.shuffleDirections();
                     state.currentTaskIndex = 0;
-                    LessonManager.loadTask(state.currentTaskIndex);
+                    ExerciseManager.loadTask(state.currentTaskIndex);
                     MistakesManager.clearAllMistakes();
                 }
             });

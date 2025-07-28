@@ -1,24 +1,24 @@
-Generate a JSON object for a bilingual lesson set in the following format:
+Generate a JSON object for a bilingual lesson in the following format:
 
 {
   "title": <string>,
   "langA-B": ["en", "pt"],
-  "lessons": [
+  "exercises": [
     {
       "A": <sentence in language A>,
       "B": <translation in language B>,
       "noiseA": <space-separated distractor words for language A>,
       "noiseB": <space-separated distractor words for language B>
     },
-    // ...more lessons
+    // ...more exercises
   ]
 }
 
 Instructions:
-- Generate 20 lessons total.
+- Generate 20 exercises total.
 - Language A is English and language B is Portuguese.
 - Use difficult content: uncommon verb tenses, idiomatic expressions, subtle grammar traps
-- For each lesson, provide:
+- For each exercise, provide:
   - "A": the sentence in language A
   - "B": the translation in language B
   - "noiseA": space-separated distractor words for language A (optional, 1-5 words, do not repeat words from the sentence)

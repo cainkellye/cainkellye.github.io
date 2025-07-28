@@ -8,14 +8,14 @@
 </head>
 <body>
     <h1>Lesson Configuration Template</h1>
-    <p>This template describes the structure of a lesson configuration JSON file. It supports bidirectional lessons with language A and B properties. Each lesson can be practiced in both directions (A→B and B→A). The <code>noiseA</code> and <code>noiseB</code> properties contain distractor words for each language. If noise is missing, it will be automatically generated from other lessons.</p>
+    <p>This template describes the structure of a lesson configuration JSON file. It supports bidirectional exercises with language A and B properties. Each exercise can be practiced in both directions (A→B and B→A). The <code>noiseA</code> and <code>noiseB</code> properties contain distractor words for each language. If noise is missing, it will be automatically generated from other exercises.</p>
     
     <h2>Template Structure</h2>
     <pre>
 {
-    "title": "Lesson Set Title",
+    "title": "Lesson Title",
     "langA-B": ["lang_code_A", "lang_code_B"],
-    "lessons": [
+    "exercises": [
         {
             "A": "Sentence in language A",
             "B": "Translation in language B",
@@ -36,7 +36,7 @@
 {
     "title": "Spanish-English Basics",
     "langA-B": ["es", "en"],
-    "lessons": [
+    "exercises": [
         {
             "A": "¿Cómo estás?",
             "B": "How are you?",
@@ -59,8 +59,8 @@
     
     <h2>Features</h2>
     <ul>
-        <li><strong>Bidirectional Practice:</strong> Each lesson can be practiced in both directions (A→B and B→A)</li>
-        <li><strong>Automatic Noise Generation:</strong> If noiseA or noiseB are missing, distractor words are automatically generated from other lessons</li>
+        <li><strong>Bidirectional Practice:</strong> Each exercise can be practiced in both directions (A→B and B→A)</li>
+        <li><strong>Automatic Noise Generation:</strong> If noiseA or noiseB are missing, distractor words are automatically generated from other exercises</li>
         <li><strong>Direction Switching:</strong> Use the direction button to switch between translation directions</li>
         <li><strong>Language-Specific Vocabulary:</strong> Vocabulary buttons generate word lists for each language</li>
     </ul>

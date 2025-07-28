@@ -29,6 +29,21 @@ document.addEventListener('DOMContentLoaded', () => {
             return false;
         },
 
+        // Remove the 'c' parameter from the current URL
+        removeConfigParam() {
+            try {
+                const url = new URL(window.location.href);
+                if (url.searchParams.has('c')) {
+                    url.searchParams.delete('c');
+                    const newUrl = url.toString();
+                    window.history.replaceState({}, '', newUrl);
+                    console.log('Removed c parameter from URL');
+                }
+            } catch (error) {
+                console.error('Error removing config parameter from URL:', error);
+            }
+        },
+
         // Generate shareable URL for current config
         generateShareURL(config) {
             try {
@@ -1179,6 +1194,7 @@ Estimated Quota: ${info.estimatedQuota}`;
                     UI.showSaveButton(newConfig);
                     elements.configInput.value = '';
                     elements.configPanel.style.display = 'none';
+                    URLHandler.removeConfigParam();
                 } else {
                     alert("Invalid configuration format. Make sure it has an 'exercises' property.");
                 }
@@ -1331,7 +1347,7 @@ Estimated Quota: ${info.estimatedQuota}`;
             if (lesson) {
                 this.loadConfiguration(lesson.config);
                 elements.configPanel.style.display = 'none';
-                // TODO: remove query string
+                URLHandler.removeConfigParam();
             } else {
                 alert("Lesson not found.");
             }

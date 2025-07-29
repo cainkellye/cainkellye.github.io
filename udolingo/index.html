@@ -25,9 +25,6 @@
             </div>
             
             <div class="sidebar-section">
-            </div>
-            
-            <div class="sidebar-section">
                 <button id="mistakes-btn" disabled>My Mistakes</button>
                 <button id="vocab1-btn" title="Open vocabulary" style="display: none">a → b 📖</button>
                 <button id="vocab2-btn" title="Open vocabulary" style="display: none">b → a 📖</button>
@@ -131,18 +128,20 @@
                 <!-- Language A Selection -->
                 <div class="config-group">
                     <label for="langA-select">Language A:</label>
-                    <div class="combobox-container">
-                        <input type="text" id="langA-input" list="languages-listA" placeholder="Type or select..." value="en">
-                        <datalist id="languages-listA"></datalist>
+                    <div class="custom-dropdown" id="langA-dropdown">
+                        <input type="text" id="langA-input" placeholder="Type or select..." value="English" readonly>
+                        <div class="dropdown-arrow">▼</div>
+                        <div class="dropdown-options" id="langA-options"></div>
                     </div>
                 </div>
 
                 <!-- Language B Selection -->
                 <div class="config-group">
                     <label for="langB-select">Language B:</label>
-                    <div class="combobox-container">
-                        <input type="text" id="langB-input" list="languages-listB" placeholder="Type or select..." value="pt">
-                        <datalist id="languages-listB"></datalist>
+                    <div class="custom-dropdown" id="langB-dropdown">
+                        <input type="text" id="langB-input" placeholder="Type or select..." value="Spanish" readonly>
+                        <div class="dropdown-arrow">▼</div>
+                        <div class="dropdown-options" id="langB-options"></div>
                     </div>
                 </div>
 
@@ -188,16 +187,16 @@
                     <label>Noise Level:</label>
                     <div class="noise-radio-group">
                         <label class="radio-label">
-                            <input type="radio" name="noise" value="auto" checked> Auto
-                        </label>
-                        <label class="radio-label">
                             <input type="radio" name="noise" value="low"> Low (1-2 words)
                         </label>
                         <label class="radio-label">
-                            <input type="radio" name="noise" value="average"> Average (3-4 words)
+                            <input type="radio" name="noise" value="average" checked> Average (3-4 words)
                         </label>
                         <label class="radio-label">
                             <input type="radio" name="noise" value="high"> High (5-6 words)
+                        </label>
+                        <label class="radio-label" title="Random words from the exercises">
+                            <input type="radio" name="noise" value="auto"> Generated (5 words)
                         </label>
                     </div>
                 </div>
@@ -206,11 +205,10 @@
             <!-- Generated Prompt Output -->
             <div class="config-group">
                 <label for="generated-prompt">Generated LLM Prompt:</label>
-                <textarea id="generated-prompt" readonly rows="12"></textarea>
+                <textarea id="generated-prompt" rows="12"></textarea>
             </div>
 
             <div class="modal-buttons">
-                <button id="generate-prompt-text-btn">Generate Prompt</button>
                 <button id="copy-prompt-btn">Copy to Clipboard</button>
                 <button id="close-llm-prompt-btn">Close</button>
             </div>

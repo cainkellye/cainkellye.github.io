@@ -12,28 +12,31 @@
     <div class="app-container">
         <!-- Sidebar -->
         <div id="sidebar" class="sidebar">
-            <div class="sidebar-header">
+            <div id="sidebar-header" class="sidebar-header">
                 <img alt="mascot" src="udolingo-icon.png" width="30" height="30" />
                 <h3>Control Panel</h3>
+                <span class="sidebar-toggle" id="sidebar-toggle">▼</span>
             </div>
             
-            <div class="sidebar-section">
-                <button id="open-config-panel-btn">Load Lesson</button>
-                <button id="shuffle-exercises-btn" disabled>Shuffle Exercises</button>
-                <button id="save-current-btn" disabled>Save Current</button>
-                <button id="share-btn" disabled>Share Current</button>
-            </div>
-            
-            <div class="sidebar-section">
-                <button id="mistakes-btn" disabled>My Mistakes</button>
-                <button id="vocab1-btn" title="Open vocabulary" style="display: none">a → b 📖</button>
-                <button id="vocab2-btn" title="Open vocabulary" style="display: none">b → a 📖</button>
-            </div>
+            <div class="sidebar-content" id="sidebar-content">
+                <div class="sidebar-section">
+                    <button id="open-config-panel-btn">Load Lesson</button>
+                    <button id="shuffle-exercises-btn" disabled>Shuffle Exercises</button>
+                    <button id="save-current-btn" disabled>Save Current</button>
+                    <button id="share-btn" disabled>Share Current</button>
+                </div>
+                
+                <div class="sidebar-section">
+                    <button id="mistakes-btn" disabled>My Mistakes</button>
+                    <button id="vocab1-btn" title="Open vocabulary" style="display: none">a → b 📖</button>
+                    <button id="vocab2-btn" title="Open vocabulary" style="display: none">b → a 📖</button>
+                </div>
 
-            <div class="sidebar-section">
-                <button id="generate-prompt-btn">Generate LLM Prompt</button>
-                <button onclick="window.open('config.html', '_blank')">Config Format</button>
-                <button id="current-config-btn">Current Config</button>
+                <div class="sidebar-section">
+                    <button id="generate-prompt-btn">Generate LLM Prompt</button>
+                    <button onclick="window.open('config.html', '_blank')">Config Format</button>
+                    <button id="current-config-btn">Current Config</button>
+                </div>
             </div>
         </div>
 

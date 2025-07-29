@@ -1,4 +1,54 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- Mobile Sidebar Management ---
+    const SidebarManager = {
+        init() {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarHeader = document.getElementById('sidebar-header');
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            
+            // Initially collapse sidebar on mobile
+            if (window.innerWidth <= 768) {
+                sidebar.classList.add('collapsed');
+            }
+            
+            // Toggle sidebar when header is clicked on mobile
+            sidebarHeader.addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    this.toggleSidebar();
+                }
+            });
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                const sidebar = document.getElementById('sidebar');
+                if (window.innerWidth > 768) {
+                    // Remove collapsed class on desktop
+                    sidebar.classList.remove('collapsed');
+                } else if (!sidebar.classList.contains('collapsed')) {
+                    // Auto-collapse on mobile if not already collapsed
+                    sidebar.classList.add('collapsed');
+                }
+            });
+        },
+        
+        toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+        },
+        
+        collapseSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (window.innerWidth <= 768) {
+                sidebar.classList.add('collapsed');
+            }
+        },
+        
+        expandSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.remove('collapsed');
+        }
+    };
+
     // --- URL Parameter Handling ---
     const URLHandler = {
         // Get query parameter value
@@ -677,6 +727,13 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.share.disabled = !hasConfig;
         },
 
+        // Auto-collapse sidebar on mobile when performing actions
+        autoCollapseSidebarOnMobile() {
+            if (window.innerWidth <= 768) {
+                SidebarManager.collapseSidebar();
+            }
+        },
+
         // Tab management
         switchTab(tabName) {
             if (tabName === 'paste') {
@@ -1189,6 +1246,9 @@ Estimated Quota: ${info.estimatedQuota}`;
             UI.updateVocabButtons(state.config["langA-B"]);
             UI.updateControlButtons();
             MistakesManager.clearAllMistakes();
+            
+            // Auto-collapse sidebar on mobile after loading
+            UI.autoCollapseSidebarOnMobile();
         },
 
         loadFromText() {
@@ -1206,11 +1266,24 @@ Estimated Quota: ${info.estimatedQuota}`;
                     elements.configInput.value = '';
                     elements.configPanel.style.display = 'none';
                     URLHandler.removeConfigParam();
+                    UI.autoCollapseSidebarOnMobile();
                 } else {
                     alert("Invalid configuration format. Make sure it has an 'exercises' property.");
                 }
             } catch (error) {
                 alert(`Error parsing JSON: ${error.message}`);
+            }
+        },
+
+        loadSavedLesson(lessonId) {
+            const lesson = StorageManager.getSavedLesson(lessonId);
+            if (lesson) {
+                this.loadConfiguration(lesson.config);
+                elements.configPanel.style.display = 'none';
+                URLHandler.removeConfigParam();
+                UI.autoCollapseSidebarOnMobile();
+            } else {
+                alert("Lesson not found.");
             }
         },
 
@@ -1359,6 +1432,7 @@ Estimated Quota: ${info.estimatedQuota}`;
                 this.loadConfiguration(lesson.config);
                 elements.configPanel.style.display = 'none';
                 URLHandler.removeConfigParam();
+                UI.autoCollapseSidebarOnMobile();
             } else {
                 alert("Lesson not found.");
             }
@@ -2193,11 +2267,30 @@ Instructions:
                     LLMPromptGenerator.generatePrompt();
                 }
             });
+
+            // Add event listeners that should auto-collapse sidebar on mobile
+            const actionsRequiringCollapse = [
+                elements.openConfigPanel,
+                elements.generatePromptBtn,
+                elements.mistakes
+            ];
+
+            actionsRequiringCollapse.forEach(element => {
+                if (element) {
+                    element.addEventListener('click', () => {
+                        // Small delay to allow modal to open first
+                        setTimeout(() => {
+                            UI.autoCollapseSidebarOnMobile();
+                        }, 100);
+                    });
+                }
+            });
         }
     };
 
     // --- Application Initialization ---
     function initialize() {
+        SidebarManager.init();
         EventHandlers.setupEventListeners();
         
         // Debug storage info on startup

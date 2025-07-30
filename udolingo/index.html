@@ -6,7 +6,6 @@
     <title>Udolingo</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="udolingo-icon.png">
-    <script src="lz-string-1.4.4.js"></script>
 </head>
 <body>
     <div class="app-container">
@@ -63,6 +62,7 @@
         </div>
     </div>
 
+    <!-- Configuration Modal -->
     <div id="config-panel" class="modal-overlay" style="display: none;">
         <div class="modal-content">
             <h2>Lesson Configuration</h2>
@@ -210,7 +210,7 @@
             <!-- Generated Prompt Output -->
             <div class="config-group">
                 <label for="generated-prompt">Generated LLM Prompt:</label>
-                <textarea id="generated-prompt" rows="12"></textarea>
+                <textarea id="generated-prompt" rows="12" spellcheck="false"></textarea>
             </div>
 
             <div class="modal-buttons">
@@ -220,6 +220,6 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script type="module" src="js/app.js"></script>
 </body>
 </html>

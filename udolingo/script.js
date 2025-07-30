@@ -133,6 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
         openConfigPanel: document.getElementById('open-config-panel-btn'),
         configPanel: document.getElementById('config-panel'),
         configInput: document.getElementById('config-input'),
+        loadFromClipboard: document.getElementById('load-from-clipboard-btn'),
         loadSaveConfig: document.getElementById('load-save-config-btn'),
         cancelConfig: document.getElementById('cancel-config-btn'),
         
@@ -1269,7 +1270,6 @@ Estimated Quota: ${info.estimatedQuota}`;
                 const newConfig = JSON.parse(configText);
                 if (newConfig && newConfig.exercises) {
                     this.loadConfiguration(newConfig);
-                    UI.showSaveButton(newConfig);
                     elements.configInput.value = '';
                     UI.hideConfigModal();
                     URLHandler.removeConfigParam();
@@ -1291,6 +1291,25 @@ Estimated Quota: ${info.estimatedQuota}`;
                 UI.autoCollapseSidebarOnMobile();
             } else {
                 alert("Lesson not found.");
+            }
+        },
+
+        async pasteConfigFromClipboard() {
+            try {
+                const clipboard = await navigator.clipboard.readText();
+                const newConfig = JSON.parse(clipboard);
+                if (newConfig && newConfig.exercises && newConfig.exercises.length > 0) {
+                    console.log(`Load from clipboard. Config title: ${newConfig.title}`);
+                    this.loadConfiguration(newConfig);
+                    elements.configInput.value = '';
+                    UI.hideConfigModal();
+                    URLHandler.removeConfigParam();
+                    UI.autoCollapseSidebarOnMobile();
+                } else {
+                    alert("The clipboard does not contain a valid Udolingo lesson.");
+                }
+            } catch (err) {
+                alert("The clipboard does not contain a valid Udolingo lesson.");
             }
         },
 
@@ -2167,6 +2186,10 @@ Instructions:
 
             elements.cancelSaved.addEventListener('click', () => {
                 UI.hideConfigModal();
+            });
+
+            elements.loadFromClipboard.addEventListener('click', () => {
+                ConfigManager.pasteConfigFromClipboard();
             });
 
             elements.loadSaveConfig.addEventListener('click', () => {

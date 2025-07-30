@@ -65,8 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const decompressed = LZString144.decompressFromEncodedURIComponent(compressedConfig);
                     if (decompressed) {
                         const config = JSON.parse(decompressed);
-                        // Handle backward compatibility: accept both "exercises" and "lessons"
-                        if (config && (config.exercises || config.lessons)) {
+                        if (config && config.exercises) {
                             console.log('Loading config from URL parameter...');
                             ConfigManager.loadConfiguration(config);
                             return true;
@@ -734,6 +733,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
 
+        showConfigModal() {
+            elements.configPanel.style.display = 'flex';
+        },
+
+        hideConfigModal() {
+            elements.configPanel.style.display = 'none';
+        },
+
         // Tab management
         switchTab(tabName) {
             if (tabName === 'paste') {
@@ -1264,7 +1271,7 @@ Estimated Quota: ${info.estimatedQuota}`;
                     this.loadConfiguration(newConfig);
                     UI.showSaveButton(newConfig);
                     elements.configInput.value = '';
-                    elements.configPanel.style.display = 'none';
+                    UI.hideConfigModal();
                     URLHandler.removeConfigParam();
                     UI.autoCollapseSidebarOnMobile();
                 } else {
@@ -1279,7 +1286,7 @@ Estimated Quota: ${info.estimatedQuota}`;
             const lesson = StorageManager.getSavedLesson(lessonId);
             if (lesson) {
                 this.loadConfiguration(lesson.config);
-                elements.configPanel.style.display = 'none';
+                UI.hideConfigModal();
                 URLHandler.removeConfigParam();
                 UI.autoCollapseSidebarOnMobile();
             } else {
@@ -1430,7 +1437,7 @@ Estimated Quota: ${info.estimatedQuota}`;
             const lesson = StorageManager.getSavedLesson(lessonId);
             if (lesson) {
                 this.loadConfiguration(lesson.config);
-                elements.configPanel.style.display = 'none';
+                UI.hideConfigModal();
                 URLHandler.removeConfigParam();
                 UI.autoCollapseSidebarOnMobile();
             } else {
@@ -2148,18 +2155,18 @@ Instructions:
 
             // Configuration panel
             elements.openConfigPanel.addEventListener('click', () => {
-                elements.configPanel.style.display = 'flex';
                 UI.switchTab('paste');
+                UI.showConfigModal();
             });
 
             elements.cancelConfig.addEventListener('click', () => {
-                elements.configPanel.style.display = 'none';
+                UI.hideConfigModal();
                 elements.configInput.value = '';
                 UI.showSaveButton(null);
             });
 
             elements.cancelSaved.addEventListener('click', () => {
-                elements.configPanel.style.display = 'none';
+                UI.hideConfigModal();
             });
 
             elements.loadSaveConfig.addEventListener('click', () => {

@@ -14,13 +14,14 @@ body {
 
 .sidebar {
     width: 13rem;
-    background-color: #2c3e50;
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     color: white;
     padding: 1rem;
     overflow-y: auto;
     flex-shrink: 0;
     box-sizing: border-box;
     transition: width 0.3s ease;
+    box-shadow: 2px 0 20px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar-header {
@@ -29,7 +30,7 @@ body {
     gap: 0.5rem;
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
-    border-bottom: 1px solid #34495e;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     cursor: pointer;
     position: relative;
 }
@@ -57,23 +58,29 @@ body {
 .sidebar button {
     width: 100%;
     margin-bottom: 0.5rem;
-    background-color: #34495e;
+    background: linear-gradient(135deg, #667eea 0%, #455799 100%);
     color: white;
-    border: 1px solid #3f5771;
+    border: 1px solid rgba(255, 255, 255, 0.2);
     padding: 0.75rem;
     text-align: left;
     font-size: 0.9rem;
+    border-radius: 5px;
+    transition: all 0.3s ease;
 }
 
 .sidebar button:hover:not(:disabled) {
-    background-color: #4a6b89;
+    background: linear-gradient(135deg, #5a6fd8 0%, #4b5ea2 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .sidebar button:disabled {
-    background-color: #2c3e50;
-    color: #7f8c8d;
-    border-color: #2c3e50;
+    background: rgba(44, 62, 80, 0.5);
+    color: rgba(255, 255, 255, 0.4);
+    border-color: rgba(255, 255, 255, 0.1);
     cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
 .main-content {
@@ -88,7 +95,7 @@ body {
     background-color: white;
     padding: 1rem 1rem 2rem 1rem;
     border-radius: 12px;
-    box-shadow: 0 0 12px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     text-align: center;
     width: 90%;
     max-width: 40rem;
@@ -132,54 +139,54 @@ button:disabled {
 }
 
 #submit-btn {
-    background-color: #4CAF50;
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
     color: white;
 }
 
 #submit-btn:disabled {
-    background-color: #a5d6a7; /* Muted green */
-    color: #e0e0e0;
+    background: rgba(76, 175, 80, 0.5);
+    color: rgba(255, 255, 255, 0.6);
 }
 
 #clear-btn {
-    background-color: #f44336;
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
     color: white;
 }
 
 #clear-btn:disabled {
-    background-color: #f7bdbd; /* Muted red */
-    color: #e0e0e0;
+    background: rgba(244, 67, 54, 0.5);
+    color: rgba(255, 255, 255, 0.6);
 }
 
 #back-btn {
-    background-color: #efc32a;
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
     color: white;
 }
 
 #back-btn:disabled {
-    background-color: #f5e7b3; /* Muted yellow */
-    color: #e0e0e0;
+    background: rgba(255, 152, 0, 0.5);
+    color: rgba(255, 255, 255, 0.6);
 }
 
 #translate-btn {
-    background-color: #4285F4;
+    background: linear-gradient(135deg, #4285F4 0%, #1976d2 100%);
     color: white;
-    flex: 0 0 auto
+    flex: 0 0 auto;
 }
 
 #translate-btn:disabled {
-    background-color: #b3c6e6; /* Muted blue */
-    color: #e0e0e0;
+    background: rgba(66, 133, 244, 0.5);
+    color: rgba(255, 255, 255, 0.6);
 }
 
 #next-btn {
-    background-color: #9b9b9b;
+    background: linear-gradient(135deg, #9b9b9b 0%, #757575 100%);
     color: white;
 }
 
 #next-btn:disabled {
-    background-color: #f5e7b3; /* Muted yellow */
-    color: #e0e0e0;
+    background: rgba(155, 155, 155, 0.5);
+    color: rgba(255, 255, 255, 0.6);
 }
 
 .config-example {
@@ -214,12 +221,13 @@ button:disabled {
     position: fixed;
     top: 5rem;
     left: 13rem;
-    background-color: white;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(10px);
     padding: 1rem;
     border-radius: 10px;
     width: 80%;
     max-width: 500px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     max-height: 90vh;
     overflow-y: auto;
 }
@@ -251,17 +259,21 @@ button:disabled {
 }
 
 .modal-buttons button {
-    background-color: #008CBA;
+    background: linear-gradient(135deg, #667eea 0%, #455799 100%);
     color: white;
+    border-radius: 8px;
+    transition: all 0.3s ease;
 }
 
 .modal-buttons button:hover {
-    background-color: #007B9A;
+    background: linear-gradient(135deg, #5a6fd8 0%, #4b5ea2 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .modal-buttons button:disabled {
-    background-color: #80ACDA;
-    color: #e0e0e0;
+    background: rgba(102, 126, 234, 0.5);
+    color: rgba(255, 255, 255, 0.6);
 }
 
 /* Tab styles */
@@ -279,10 +291,11 @@ button:disabled {
     cursor: pointer;
     border-radius: 5px 5px 0 0;
     margin-right: 2px;
+    transition: all 0.3s ease;
 }
 
 .tab-button.active {
-    background-color: #008CBA;
+    background: linear-gradient(135deg, #667eea 0%, #455799 100%);
     color: white;
 }
 
@@ -642,7 +655,7 @@ button:disabled {
 
     .modal-content {
         left: unset;
-        background-color: white;
+        background-color: #E4E4E4;
         padding: 1rem;
         border-radius: 10px;
         width: 90%;

@@ -1,0 +1,652 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Udolingo - Instructions & Help</title>
+    <link rel="icon" type="image/png" href="udolingo-icon.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        ul {
+            margin-left: 20px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+            text-decoration: none;
+        }
+
+        .logo img {
+            width: 32px;
+            height: 32px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #2c3e50;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: #667eea;
+        }
+
+        .cta-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: inline-block;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 120px 0 80px;
+        }
+
+        .content-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            text-align: center;
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .section-title {
+            color: #2c3e50;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 3px solid;
+            border-image: linear-gradient(135deg, #667eea 0%, #764ba2 100%) 1;
+            padding-bottom: 0.5rem;
+        }
+
+        .step-list {
+            list-style: none;
+            counter-reset: step-counter;
+        }
+
+        .step-list li {
+            counter-increment: step-counter;
+            margin-bottom: 1.5rem;
+            position: relative;
+            padding-left: 3rem;
+        }
+
+        .step-list li::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .feature-item {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 1.5rem;
+            border-radius: 10px;
+            border-left: 4px solid;
+            border-image: linear-gradient(135deg, #667eea 0%, #764ba2 100%) 1;
+        }
+
+        .feature-item h4 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .code-block {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+
+        .warning {
+            background: rgba(255, 193, 7, 0.1);
+            border-left: 4px solid #ffc107;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+
+        .warning strong {
+            color: #856404;
+        }
+
+        .tip {
+            background: rgba(40, 167, 69, 0.1);
+            border-left: 4px solid #28a745;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+
+        .tip strong {
+            color: #155724;
+        }
+
+        .lesson-placeholder {
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .lesson-placeholder h4 {
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        .lesson-placeholder p {
+            color: #666;
+            font-style: italic;
+        }
+
+        /* Table styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+        }
+
+        /* Footer */
+        footer {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            margin-top: 3rem;
+        }
+
+        footer p {
+            opacity: 0.8;
+        }
+
+        footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .page-title {
+                font-size: 2rem;
+            }
+
+            .content-card {
+                padding: 1.5rem;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .step-list li {
+                padding-left: 2.5rem;
+            }
+
+            .step-list li::before {
+                width: 1.5rem;
+                height: 1.5rem;
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Animation */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .content-card {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .content-card:nth-child(2) { animation-delay: 0.1s; }
+        .content-card:nth-child(3) { animation-delay: 0.2s; }
+        .content-card:nth-child(4) { animation-delay: 0.3s; }
+        .content-card:nth-child(5) { animation-delay: 0.4s; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <nav>
+                <a href="welcome.html" class="logo">
+                    <img src="udolingo-icon.png" alt="Udolingo" width="32" height="32">
+                    Udolingo
+                </a>
+                <ul class="nav-links">
+                    <li><a href="welcome.html">Home</a></li>
+                    <li><a href="index.html">Practice</a></li>
+                    <li><a href="config.html" target="_blank">Config Format</a></li>
+                    <li><a href="https://github.com/cainkellye/udolingo" target="_blank">GitHub</a></li>
+                </ul>
+                <a href="index.html" class="cta-button">Start Learning</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <section class="main-content">
+        <div class="container">
+            <h1 class="page-title">📚 How to Use Udolingo</h1>
+
+            <!-- Getting Started -->
+            <div class="content-card">
+                <h2 class="section-title">🚀 Getting Started</h2>
+                <p>Welcome to Udolingo! This guide will help you get the most out of your AI-powered language learning experience.</p>
+                <br />
+
+                <ol class="step-list">
+                    <li>
+                        <strong>Generate a Lesson with AI</strong><br>
+                        Click "Generate LLM Prompt" to create a custom prompt for your AI assistant (ChatGPT, Claude, Gemini, etc.). Choose your languages, difficulty level, and topic of interest.
+                    </li>
+                    <li>
+                        <strong>Copy and Use the Prompt</strong><br>
+                        Copy the generated prompt and paste it into your preferred AI chat service. The AI will generate a JSON lesson configuration.
+                    </li>
+                    <li>
+                        <strong>Load Your Lesson</strong><br>
+                        Copy the JSON response from your AI and paste it into Udolingo using "Load Lesson" → "Paste New Lesson".
+                    </li>
+                    <li>
+                        <strong>Start Learning</strong><br>
+                        Begin practicing with your personalized lesson! Use the word bank to build sentences and get instant feedback.
+                    </li>
+                </ol>
+                <a href="index.html" class="cta-button">Begin!</a>
+            </div>
+
+            <!-- Features Overview -->
+            <div class="content-card">
+                <h2 class="section-title">✨ Key Features</h2>
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <h4>🤖 AI Integration</h4>
+                        <p>Use any LLM (ChatGPT, Claude, Gemini) to generate personalized lessons with our built-in prompt generator.</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4>🎨 Custom Themes</h4>
+                        <p>Practice with topics that interest you: travel, business, movies, books, or any subject you choose.</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4>📱 Bidirectional Learning</h4>
+                        <p>Translation directions (A→B and B→A) are randomized. When the lesson starts over, they will be swapped!</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4>📚 Mistake Tracking</h4>
+                        <p>Review your mistakes anytime and generate AI prompts to help you understand and learn from them.</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4>🔗 Easy Sharing</h4>
+                        <p>Share lessons with friends or students using simple URLs. Perfect for educators and study groups.</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4>💾 Save & Organize</h4>
+                        <p>Lessons are automatically saved locally for easy access later. Rename them to organize better, or delete if not needed.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Panel Guide -->
+            <div class="content-card">
+                <h2 class="section-title">🎛️ Control Panel Guide</h2>
+                
+                <h3>Lesson Management</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Button</th>
+                            <th>Function</th>
+                            <th>When Available</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Load Lesson</strong></td>
+                            <td>Load a new lesson from JSON or saved lessons</td>
+                            <td>Always</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Shuffle Exercises</strong></td>
+                            <td>Randomize the order of exercises in current lesson</td>
+                            <td>When lesson is loaded</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Save Current</strong></td>
+                            <td>Save the current lesson to local storage</td>
+                            <td>When lesson is loaded</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Share Current</strong></td>
+                            <td>Generate a shareable URL for the current lesson</td>
+                            <td>When lesson is loaded</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Learning Tools</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Button</th>
+                            <th>Function</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>My Mistakes</strong></td>
+                            <td>Review incorrect answers</td>
+                            <td>View all mistakes and generate AI prompts for help</td>
+                        </tr>
+                        <tr>
+                            <td><strong>a → b 📖</strong></td>
+                            <td>Vocabulary list (Language A to B)</td>
+                            <td>Opens Google Translate with the list of words from the lesson</td>
+                        </tr>
+                        <tr>
+                            <td><strong>b → a 📖</strong></td>
+                            <td>Vocabulary list (Language B to A)</td>
+                            <td>Opens Google Translate with the list of words from the lesson</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Configuration Tools</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Button</th>
+                            <th>Function</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Generate LLM Prompt</strong></td>
+                            <td>Create AI prompts</td>
+                            <td>Configure and generate prompts for your AI assistant</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Config Format</strong></td>
+                            <td>View JSON format guide</td>
+                            <td>Learn how to structure lesson JSON files</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Current Config</strong></td>
+                            <td>View current lesson JSON</td>
+                            <td>See the configuration of your loaded lesson</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Exercise Types -->
+            <div class="content-card">
+                <h2 class="section-title">📝 Exercise Interface</h2>
+                
+                <div class="tip">
+                    <strong>💡 Tip:</strong> Use the word bank below the exercise to build your translation. Click words to add them to your response, and use the action buttons to navigate through exercises.
+                </div>
+
+                <h3>Action Buttons</h3>
+                <ul>
+                    <li><strong>Submit:</strong> Check your answer and get feedback</li>
+                    <li><strong>Clear:</strong> Clear your current response</li>
+                    <li><strong>Skip:</strong> Move to the next exercise without answering</li>
+                    <li><strong>Back:</strong> Remove the last added word</li>
+                    <li><strong>Google Translate:</strong> Open the current prompt in Google Translate</li>
+                </ul>
+
+                <div class="warning" style="display: none">
+                    <strong>⚠️ Note:</strong> Exercises are scored based on exact matches. Make sure to use proper capitalization and punctuation as shown in the lesson.
+                </div>
+            </div>
+
+            <!-- Pre-defined Lessons -->
+            <div class="content-card">
+                <h2 class="section-title">📖 Pre-defined Language Lessons</h2>
+                <p>Ready-to-use lessons created by the community and educators. Click any link below to instantly load a lesson:</p>
+                
+                <div class="lesson-placeholder">
+                    <h4>🚧 Coming Soon!</h4>
+                    <p>Pre-defined lesson links will be added here. These will include beginner to advanced lessons for popular language pairs and topics.</p>
+                    <br>
+                    <p><em>Examples that will be available:</em></p>
+                    <ul style="text-align: left; display: inline-block; margin-top: 1rem;">
+                        <li>Spanish for Travelers - Beginner</li>
+                        <li>Business English - Intermediate</li>
+                        <li>French Cuisine Vocabulary - Intermediate</li>
+                        <li>German Grammar Essentials - Advanced</li>
+                        <li>Japanese Polite Expressions - Beginner</li>
+                    </ul>
+                </div>
+                
+                <div class="tip">
+                    <strong>💡 Want to contribute?</strong> Create your own lessons and share them with the community via GitHub. High-quality lessons may be featured here!
+                </div>
+            </div>
+
+            <!-- Advanced Tips -->
+            <div class="content-card">
+                <h2 class="section-title">🎯 Advanced Tips</h2>
+                
+                <h3>Creating Better Lessons with AI</h3>
+                <ul>
+                    <li><strong>Be Specific:</strong> The more specific your topic, the better your AI-generated lessons will be</li>
+                    <li><strong>Set Context:</strong> Include context like "for business meetings" or "for casual conversation"</li>
+                    <li><strong>Vary Difficulty:</strong> Start with easier lessons and gradually increase difficulty</li>
+                    <li><strong>Cultural Context:</strong> Ask your AI to include cultural notes and context</li>
+                </ul>
+                <br />
+                <h3>Effective Practice Strategies</h3>
+                <ul>
+                    <li><strong>Regular Sessions:</strong> Practice little and often rather than long, infrequent sessions</li>
+                    <li><strong>Review Mistakes:</strong> Use the "My Mistakes" feature to identify patterns in your errors</li>
+                    <li><strong>Mix Topics:</strong> Alternate between different subjects to maintain interest</li>
+                    <li><strong>Both Directions:</strong> Practice translation in both directions, by cycling though the lessons again, for better retention</li>
+                </ul>
+                <br />
+                <h3>Sharing and Collaboration</h3>
+                <ul>
+                    <li><strong>Study Groups:</strong> Share lesson URLs with study partners</li>
+                    <li><strong>Classroom Use:</strong> Teachers can create and distribute custom lessons</li>
+                    <li><strong>Progress Tracking:</strong> Save lessons to track your learning journey</li>
+                </ul>
+            </div>
+
+            <!-- Troubleshooting -->
+            <div class="content-card">
+                <h2 class="section-title">🔧 Troubleshooting</h2>
+                
+                <h3>Common Issues</h3>
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <h4>❌ Lesson Won't Load</h4>
+                        <p>Check that your JSON is properly formatted. Use the "Config Format" guide to verify the structure.</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4>❌ Buttons Are Disabled</h4>
+                        <p>Some buttons only become active after loading a lesson. Make sure you have successfully loaded content.</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4>❌ Sharing Link Doesn't Work</h4>
+                        <p>Sharing links contain the entire lesson data. Make sure the URL wasn't truncated when copying.</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4>❌ AI Generated Invalid JSON</h4>
+                        <p>Sometimes AI responses need editing. Check for missing commas, brackets, or quotation marks.</p>
+                    </div>
+                </div>
+
+                <div class="tip">
+                    <strong>💡 Still having issues?</strong> Check the browser console (F12) for error messages, or visit our GitHub repository for more help and to report bugs.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 László Lenkei. Open source and free forever. 
+               <a href="https://github.com/cainkellye/udolingo" target="_blank">Contribute on GitHub</a>
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Add scroll effect to header
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 100) {
+                header.style.background = 'rgba(255, 255, 255, 0.98)';
+            } else {
+                header.style.background = 'rgba(255, 255, 255, 0.95)';
+            }
+        });
+    </script>
+</body>
+</html>

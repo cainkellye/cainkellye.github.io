@@ -33,9 +33,6 @@ class UdolingoApp {
         this.llmGenerator = new LLMPromptGenerator();
     }
 
-    /**
-     * Initialize the application
-     */
     async init() {
         try {
             console.log('Initializing Udolingo...');
@@ -54,22 +51,19 @@ class UdolingoApp {
             // Load initial configuration
             await this.loadInitialConfig();
             
-            console.log('✅ Udolingo initialized successfully!');
+            console.log('Udolingo initialized successfully!');
         } catch (error) {
-            console.error('❌ Failed to initialize Udolingo:', error);
+            console.error('Failed to initialize Udolingo:', error);
             this.handleInitializationError(error);
         }
     }
 
-    /**
-     * Display storage information on startup
-     */
     displayStorageInfo() {
         const storageInfo = this.storageManager.getStorageInfo();
-        console.log('💾 Storage info on startup:', storageInfo);
+        console.log('Storage info on startup:', storageInfo);
         
         if (!storageInfo.isAvailable) {
-            console.warn('⚠️ localStorage is not available');
+            console.warn('localStorage is not available');
         }
     }
 
@@ -82,14 +76,14 @@ class UdolingoApp {
     async loadInitialConfig() {
         // Check for config in URL parameters first
         if (this.urlHandler.loadConfigFromURL()) {
-            console.log('🔗 Config loaded from URL parameter');
+            console.log('Config loaded from URL parameter');
             return;
         }
         
         // Auto-load the latest saved lesson if any exist
         const latestLesson = this.getLatestSavedLesson();
         if (latestLesson) {
-            console.log('📂 Auto-loading latest saved lesson:', latestLesson.title);
+            console.log('Auto-loading latest saved lesson:', latestLesson.title);
             this.managers.config.loadSavedLesson(latestLesson.id);
             return;
         }
@@ -98,9 +92,6 @@ class UdolingoApp {
         await this.managers.config.loadFromFile();
     }
 
-    /**
-     * Get the latest saved lesson
-     */
     getLatestSavedLesson() {
         const savedLessons = this.storageManager.getSavedLessons();
         const lessonIds = Object.keys(savedLessons);
@@ -124,9 +115,6 @@ class UdolingoApp {
         return { id: latestId, ...savedLessons[latestId] };
     }
 
-    /**
-     * Handle initialization errors
-     */
     handleInitializationError(error) {
         const errorMessage = `
             Failed to initialize Udolingo: ${error.message}

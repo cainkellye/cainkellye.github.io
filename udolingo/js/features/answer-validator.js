@@ -11,9 +11,6 @@ export class AnswerValidator {
         // Avoid circular dependency by importing managers on demand
     }
 
-    /**
-     * Validate user's answer
-     */
     async validateAnswer(userResponse) {
         const exerciseData = await this.getCurrentExerciseForValidation();
         if (!exerciseData) {
@@ -35,7 +32,7 @@ export class AnswerValidator {
         // Check if answer is correct
         if (userResponse === solution) {
             await this.showFeedback(true);
-            console.log('? Answer correct!');
+            console.log('Answer correct!');
             return;
         }
 
@@ -54,12 +51,9 @@ export class AnswerValidator {
         const feedbackHtml = this.generateDetailedFeedback(userResponse, solution);
         await this.showFeedback(false, feedbackHtml);
         
-        console.log('? Answer incorrect');
+        console.log('Answer incorrect');
     }
 
-    /**
-     * Get current exercise data for validation
-     */
     async getCurrentExerciseForValidation() {
         if (!AppState.hasExercises()) {
             console.warn('No exercises available in AppState');
@@ -96,9 +90,6 @@ export class AnswerValidator {
         }
     }
 
-    /**
-     * Get current direction
-     */
     async getCurrentDirection() {
         try {
             // Import DirectionManager on demand to avoid circular dependency
@@ -111,9 +102,6 @@ export class AnswerValidator {
         }
     }
 
-    /**
-     * Clear word bank and hide response buttons
-     */
     async clearWordBankAndButtons() {
         try {
             // Import UIManager on demand
@@ -126,9 +114,6 @@ export class AnswerValidator {
         }
     }
 
-    /**
-     * Show feedback
-     */
     async showFeedback(isCorrect, feedbackText = '') {
         try {
             // Import UIManager on demand
@@ -140,9 +125,6 @@ export class AnswerValidator {
         }
     }
 
-    /**
-     * Record mistake
-     */
     async recordMistake(mistakeData) {
         try {
             // Validate mistake data before recording
@@ -152,15 +134,12 @@ export class AnswerValidator {
             }
 
             AppState.addMistake(mistakeData);
-            console.log('?? Mistake recorded:', mistakeData);
+            console.log('Mistake recorded:', mistakeData);
         } catch (error) {
             console.error('Error recording mistake:', error);
         }
     }
 
-    /**
-     * Generate detailed feedback with highlighted differences
-     */
     generateDetailedFeedback(userResponse, solution) {
         try {
             const userWords = StringUtils.splitSentenceClean(userResponse);
@@ -199,58 +178,6 @@ export class AnswerValidator {
         } catch (error) {
             console.error('Error generating detailed feedback:', error);
             return `Incorrect. The correct answer is: "${solution}"`;
-        }
-    }
-
-    /**
-     * Check if answer contains required words
-     */
-    hasRequiredWords(userResponse, requiredWords) {
-        try {
-            const userWords = StringUtils.splitSentenceClean(userResponse.toLowerCase());
-            return requiredWords.every(word => 
-                userWords.includes(word.toLowerCase())
-            );
-        } catch (error) {
-            console.error('Error checking required words:', error);
-            return false;
-        }
-    }
-
-    /**
-     * Calculate answer similarity score (0-100)
-     */
-    calculateSimilarity(userResponse, solution) {
-        try {
-            const userWords = StringUtils.splitSentenceClean(userResponse.toLowerCase());
-            const solutionWords = StringUtils.splitSentenceClean(solution.toLowerCase());
-            
-            if (solutionWords.length === 0) return 0;
-            
-            const matchingWords = userWords.filter(word => 
-                solutionWords.includes(word)
-            ).length;
-            
-            return Math.round((matchingWords / solutionWords.length) * 100);
-        } catch (error) {
-            console.error('Error calculating similarity:', error);
-            return 0;
-        }
-    }
-
-    /**
-     * Provide hint for difficult answers
-     */
-    generateHint(solution) {
-        try {
-            const words = StringUtils.splitSentence(solution);
-            const firstWord = words[0] || '';
-            const wordCount = words.length;
-            
-            return `Hint: The answer starts with "${firstWord}" and has ${wordCount} word${wordCount !== 1 ? 's' : ''}.`;
-        } catch (error) {
-            console.error('Error generating hint:', error);
-            return 'Hint: Check the correct answer structure.';
         }
     }
 }

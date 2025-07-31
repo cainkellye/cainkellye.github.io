@@ -5,7 +5,7 @@
 
 import { AppState } from '../core/state.js';
 import { DOM } from '../core/dom.js';
-import { ValidationUtils, PlatformUtils } from '../utils/helpers.js';
+import { ValidationUtils, ClipboardUtils, UIUtils } from '../utils/helpers.js';
 import { StorageManager } from '../utils/storage-manager.js';
 import { URLHandler } from '../utils/url-handler.js';
 import { DirectionManager } from '../features/direction-manager.js';
@@ -19,9 +19,6 @@ export class ConfigManager {
         this.uiManager = new UIManager();
     }
 
-    /**
-     * Load lesson configuration
-     */
     loadConfiguration(configData) {
         try {
             // Handle backward compatibility: convert "lessons" to "exercises"
@@ -57,20 +54,17 @@ export class ConfigManager {
             // Auto-collapse sidebar on mobile after loading
             this.uiManager.autoCollapseSidebarOnMobile();
 
-            console.log(`✅ Lesson "${configData.title}" loaded successfully`);
+            console.log(`Lesson "${configData.title}" loaded successfully`);
         } catch (error) {
-            console.error('❌ Failed to load configuration:', error);
-            this.uiManager.showError('Failed to load lesson configuration', error.message);
+            console.error('Failed to load configuration:', error);
+            UIUtils.showError('Failed to load lesson configuration', error.message);
         }
     }
 
-    /**
-     * Load configuration from text input
-     */
     loadFromText() {
         const configInput = DOM.get('configInput');
         if (!configInput) {
-            this.uiManager.showError('Configuration input not found');
+            UIUtils.showError('Configuration input not found');
             return;
         }
 
@@ -82,41 +76,25 @@ export class ConfigManager {
 
         try {
             const newConfig = JSON.parse(configText);
-            this.loadConfiguration(newConfig);
-            this.saveCurrentLoadedConfig(true);
-            
-            configInput.value = '';
-            this.uiManager.hideConfigModal();
-            this.urlHandler.removeConfigParam();
+            this._processSuccessfulLoad(newConfig, configInput);
         } catch (error) {
             alert(`Error parsing JSON: ${error.message}`);
         }
     }
 
-    /**
-     * Load saved lesson by ID
-     */
     loadSavedLesson(lessonId) {
         const lesson = this.storageManager.getSavedLesson(lessonId);
         if (lesson) {
             this.loadConfiguration(lesson.config);
-            this.uiManager.hideConfigModal();
-            this.urlHandler.removeConfigParam();
+            this._cleanupAfterLoad();
         } else {
-            this.uiManager.showError("Lesson not found.");
+            UIUtils.showError("Lesson not found.");
         }
     }
 
-    /**
-     * Load configuration from clipboard
-     */
     async loadConfigFromClipboard() {
         try {
-            if (!PlatformUtils.hasClipboardAPI()) {
-                throw new Error('Clipboard API not available');
-            }
-
-            const clipboard = await navigator.clipboard.readText();
+            const clipboard = await ClipboardUtils.readText();
             const newConfig = JSON.parse(clipboard);
             
             if (!ValidationUtils.isValidLessonConfig(newConfig)) {
@@ -126,22 +104,34 @@ export class ConfigManager {
             console.log(`Load from clipboard. Config title: ${newConfig.title}`);
             this.loadConfiguration(newConfig);
             this.saveCurrentLoadedConfig(true);
-            
-            DOM.setContent('configInput', '');
-            this.uiManager.hideConfigModal();
-            this.urlHandler.removeConfigParam();
+            this._cleanupAfterLoad();
         } catch (error) {
             console.error('Clipboard load failed:', error);
             alert("The clipboard does not contain a valid Udolingo lesson.");
         }
     }
 
-    /**
-     * Save currently loaded configuration
-     */
+    _processSuccessfulLoad(newConfig, configInput) {
+        this.loadConfiguration(newConfig);
+        this.saveCurrentLoadedConfig(true);
+        
+        if (configInput) {
+            configInput.value = '';
+        }
+        this._cleanupAfterLoad();
+    }
+
+    _cleanupAfterLoad() {
+        DOM.setContent('configInput', '');
+        this.uiManager.hideConfigModal();
+        this.urlHandler.removeConfigParam();
+    }
+
     saveCurrentLoadedConfig(silent = false) {
         if (!AppState.hasExercises()) {
-            alert("No configuration is currently loaded to save.");
+            if (!silent) {
+                alert("No configuration is currently loaded to save.");
+            }
             return;
         }
 
@@ -154,10 +144,7 @@ export class ConfigManager {
 
             const lessonId = this.storageManager.saveLesson(AppState.config);
             if (lessonId) {
-                if (!silent) {
-                    this.uiManager.showSuccess(`Lesson "${AppState.config.title}" saved successfully!`);
-                }
-                console.log(`💾 Lesson saved successfully! Id=${lessonId}`);
+                this._handleSaveSuccess(lessonId, silent);
             } else if (!silent) {
                 alert("Failed to save lesson. Please try again or check if you have enough storage space.");
             }
@@ -169,9 +156,13 @@ export class ConfigManager {
         }
     }
 
-    /**
-     * Share current configuration via URL
-     */
+    _handleSaveSuccess(lessonId, silent) {
+        if (!silent) {
+            UIUtils.showSuccess(`Lesson "${AppState.config.title}" saved successfully!`);
+        }
+        console.log(`Lesson saved successfully! Id=${lessonId}`);
+    }
+
     shareCurrentConfig() {
         if (!AppState.hasExercises()) {
             alert("No configuration is currently loaded to share.");
@@ -181,7 +172,10 @@ export class ConfigManager {
         try {
             const shareURL = this.urlHandler.generateShareURL(AppState.config);
             if (shareURL) {
-                this.copyToClipboard(shareURL, 'Share link copied to clipboard! You can now share this link with others.');
+                ClipboardUtils.copyText(
+                    shareURL, 
+                    'Share link copied to clipboard! You can now share this link with others.'
+                );
             } else {
                 alert("Failed to generate share URL. The configuration might be too large.");
             }
@@ -191,9 +185,6 @@ export class ConfigManager {
         }
     }
 
-    /**
-     * Show current configuration in new tab
-     */
     showCurrentConfig() {
         if (!AppState.config) {
             alert("No configuration is currently loaded.");
@@ -204,30 +195,31 @@ export class ConfigManager {
         const newTab = window.open('', '_blank');
         
         if (newTab) {
-            newTab.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>${AppState.config.title}</title>
-                    <link rel="stylesheet" href="config-style.css">
-                </head>
-                <body>
-                    <h1>Udolingo Configuration</h1>
-                    <textarea spellcheck="false">${configStr}</textarea>
-                </body>
-                </html>
-            `);
-            newTab.document.close();
+            this._renderConfigInNewTab(newTab, configStr);
         } else {
             alert('Unable to open a new tab. Please check your popup blocker settings.');
         }
     }
 
-    /**
-     * Load configuration from file (fallback)
-     */
+    _renderConfigInNewTab(newTab, configStr) {
+        newTab.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>${AppState.config.title}</title>
+                <link rel="stylesheet" href="config-style.css">
+            </head>
+            <body>
+                <h1>Udolingo Configuration</h1>
+                <textarea spellcheck="false">${configStr}</textarea>
+            </body>
+            </html>
+        `);
+        newTab.document.close();
+    }
+
     async loadFromFile() {
         try {
             const response = await fetch('config.json');
@@ -242,46 +234,5 @@ export class ConfigManager {
             this.uiManager.setButtonsDisabled(true);
             DOM.setContent('prompt', 'Load a lesson to begin.');
         }
-    }
-
-    /**
-     * Copy text to clipboard with fallback
-     */
-    async copyToClipboard(text, successMessage) {
-        try {
-            if (PlatformUtils.hasClipboardAPI()) {
-                await navigator.clipboard.writeText(text);
-                alert(successMessage);
-            } else {
-                this.fallbackCopyToClipboard(text, successMessage);
-            }
-        } catch (error) {
-            console.error('Clipboard copy failed:', error);
-            this.fallbackCopyToClipboard(text, successMessage);
-        }
-    }
-
-    /**
-     * Fallback copy method for older browsers
-     */
-    fallbackCopyToClipboard(text, successMessage) {
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-
-        try {
-            document.execCommand('copy');
-            alert(successMessage);
-        } catch (err) {
-            console.error('Fallback copy failed:', err);
-            prompt('Copy this text manually:', text);
-        }
-
-        document.body.removeChild(textArea);
     }
 }

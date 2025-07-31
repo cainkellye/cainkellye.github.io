@@ -2,19 +2,12 @@
  * DOM Elements Management
  * Centralized access to DOM elements with error handling
  */
-
-/**
- * DOM Elements helper class
- */
 export class DOMElements {
     constructor() {
         this.elements = null;
         this.init();
     }
 
-    /**
-     * Initialize DOM elements
-     */
     init() {
         this.elements = {
             // Main lesson elements
@@ -92,9 +85,6 @@ export class DOMElements {
         };
     }
 
-    /**
-     * Get a DOM element by ID with error handling
-     */
     getElement(id) {
         const element = document.getElementById(id);
         if (!element) {
@@ -103,34 +93,10 @@ export class DOMElements {
         return element;
     }
 
-    /**
-     * Get an element by ID (proxy method for easier access)
-     */
     get(id) {
         return this.elements[id] || this.getElement(id);
     }
 
-    /**
-     * Check if all critical elements are available
-     */
-    validateCriticalElements() {
-        const critical = [
-            'prompt', 'responseContainer', 'wordBankContainer', 'feedback',
-            'submit', 'clear', 'back', 'next', 'translate'
-        ];
-        
-        const missing = critical.filter(id => !this.elements[id]);
-        
-        if (missing.length > 0) {
-            throw new Error(`Critical DOM elements missing: ${missing.join(', ')}`);
-        }
-        
-        return true;
-    }
-
-    /**
-     * Add event listener to an element
-     */
     addEventListener(elementId, event, handler) {
         const element = this.get(elementId);
         if (element) {
@@ -140,9 +106,6 @@ export class DOMElements {
         }
     }
 
-    /**
-     * Set element content safely
-     */
     setContent(elementId, content) {
         const element = this.get(elementId);
         if (element) {
@@ -154,9 +117,6 @@ export class DOMElements {
         }
     }
 
-    /**
-     * Set element HTML safely
-     */
     setHTML(elementId, html) {
         const element = this.get(elementId);
         if (element) {
@@ -164,9 +124,6 @@ export class DOMElements {
         }
     }
 
-    /**
-     * Show/hide element
-     */
     setVisible(elementId, visible) {
         const element = this.get(elementId);
         if (element) {
@@ -174,9 +131,6 @@ export class DOMElements {
         }
     }
 
-    /**
-     * Enable/disable element
-     */
     setEnabled(elementId, enabled) {
         const element = this.get(elementId);
         if (element) {
@@ -184,16 +138,6 @@ export class DOMElements {
         }
     }
 
-    /**
-     * Set multiple elements enabled/disabled
-     */
-    setMultipleEnabled(elementIds, enabled) {
-        elementIds.forEach(id => this.setEnabled(id, enabled));
-    }
-
-    /**
-     * Clear element content
-     */
     clear(elementId) {
         const element = this.get(elementId);
         if (element) {
@@ -201,9 +145,6 @@ export class DOMElements {
         }
     }
 
-    /**
-     * Create and return a DOM element
-     */
     createElement(tag, options = {}) {
         const element = document.createElement(tag);
         

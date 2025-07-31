@@ -14,9 +14,6 @@ export class ExerciseManager {
         this.uiManager = new UIManager();
     }
 
-    /**
-     * Get exercise data for current direction
-     */
     getCurrentExerciseData(exercise, direction) {
         if (!exercise || !AppState.config) {
             return null;
@@ -47,21 +44,14 @@ export class ExerciseManager {
         }
     }
 
-    /**
-     * Parse noise words from string
-     */
     parseNoiseWords(noiseString) {
         if (!noiseString) return [];
         return StringUtils.splitSentenceClean(noiseString);
     }
 
-    /**
-     * Generate noise words for exercise
-     */
     generateNoise(lang, count, solution) {
         const words = this.generateVocabulary(lang, 0);
 
-        // Remove words found in solution (case-insensitive)
         const solutionWords = StringUtils.splitSentenceClean(solution).map(w => w.toLowerCase());
         const filteredWords = words.filter(word => !solutionWords.includes(word.toLowerCase()));
 
@@ -69,9 +59,6 @@ export class ExerciseManager {
         return ArrayUtils.removeDuplicates(filteredWords, false).slice(0, count).join(' ');
     }
 
-    /**
-     * Generate vocabulary from all exercises
-     */
     generateVocabulary(lang, minLength = 0) {
         const words = [];
         
@@ -94,9 +81,6 @@ export class ExerciseManager {
         return ArrayUtils.removeDuplicates(words, false);
     }
 
-    /**
-     * Load and display exercise task
-     */
     loadExercise(index) {
         if (!AppState.hasExercises()) {
             this.uiManager.setButtonsDisabled(true);
@@ -118,22 +102,16 @@ export class ExerciseManager {
             return;
         }
 
-        // Update state
         AppState.promptLang = exerciseData.promptLang;
         AppState.solutionLang = exerciseData.solutionLang;
 
-        // Get progress info
         const progress = AppState.getProgress();
 
-        // Update UI
         this.uiManager.updateLessonDisplay(exerciseData, progress);
 
-        console.log(`📚 Loaded exercise ${progress.current}/${progress.total} (${currentDirection})`);
+        console.log(`Loaded exercise ${progress.current}/${progress.total} (${currentDirection})`);
     }
 
-    /**
-     * Show message when no exercises are available
-     */
     showNoExercisesMessage() {
         const prompt = document.getElementById('prompt');
         const responseContainer = document.getElementById('response-container');
@@ -146,9 +124,6 @@ export class ExerciseManager {
         if (feedback) feedback.textContent = "";
     }
 
-    /**
-     * Get current exercise data for validation
-     */
     getCurrentExerciseForValidation() {
         if (!AppState.hasExercises()) {
             return null;

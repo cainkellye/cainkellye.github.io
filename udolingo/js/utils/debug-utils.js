@@ -1,6 +1,5 @@
 ﻿/**
  * Debug Utilities
- * Development and debugging helper functions
  */
 
 import { StorageManager } from './storage-manager.js';
@@ -8,26 +7,21 @@ import { URLHandler } from './url-handler.js';
 import { AppState } from '../core/state.js';
 
 export class DebugUtils {
-    /**
-     * Setup global debug functions for console access
-     */
     static setupGlobalDebugFunctions() {
         const storageManager = new StorageManager();
         const urlHandler = new URLHandler();
 
         window.udolingoDebug = {
-            // Storage operations
             clearAllLessons: () => {
                 if (confirm('Are you sure you want to delete ALL saved lessons? This cannot be undone.')) {
                     const success = storageManager.clearAllSavedLessons();
                     if (success) {
-                        console.log('✅ All lessons cleared');
-                        // Refresh saved lessons list if UI manager is available
+                        console.log('All lessons cleared');
                         if (window.udolingoApp?.managers?.ui) {
                             window.udolingoApp.managers.ui.refreshSavedLessonsList();
                         }
                     } else {
-                        console.error('❌ Failed to clear lessons');
+                        console.error('Failed to clear lessons');
                     }
                 }
             },
@@ -42,7 +36,6 @@ export class DebugUtils {
                 return storageManager.getSavedLessons();
             },
 
-            // URL operations
             generateShareURL: (config) => {
                 try {
                     const configToUse = config || AppState.config;
@@ -59,7 +52,6 @@ export class DebugUtils {
                 }
             },
 
-            // State inspection
             getAppState: () => {
                 return AppState;
             },
@@ -68,9 +60,8 @@ export class DebugUtils {
                 return AppState.config;
             },
 
-            // Performance testing
             testPerformance: () => {
-                console.log('🚀 Running performance tests...');
+                console.log('Running performance tests...');
                 
                 const tests = [
                     {
@@ -78,7 +69,6 @@ export class DebugUtils {
                         test: () => {
                             const arr = Array.from({ length: 1000 }, (_, i) => i);
                             for (let i = 0; i < 100; i++) {
-                                // Import and test ArrayUtils
                                 import('./helpers.js').then(({ ArrayUtils }) => {
                                     ArrayUtils.shuffle([...arr]);
                                 });
@@ -114,19 +104,17 @@ export class DebugUtils {
                 });
             },
 
-            // Development helpers
             simulateError: (type = 'storage') => {
-                console.warn('⚠️ Simulating error for testing...');
+                console.warn('Simulating error for testing...');
                 switch (type) {
                     case 'storage':
-                        // Temporarily override localStorage
                         const originalSetItem = localStorage.setItem;
                         localStorage.setItem = () => {
                             throw new Error('Simulated storage error');
                         };
                         setTimeout(() => {
                             localStorage.setItem = originalSetItem;
-                            console.log('✅ Storage restored');
+                            console.log('Storage restored');
                         }, 5000);
                         break;
                     case 'network':
@@ -137,41 +125,36 @@ export class DebugUtils {
                 }
             },
 
-            // Cleanup and reset
             resetApp: () => {
                 if (confirm('Reset the entire application state? This will clear current lesson but not saved lessons.')) {
                     AppState.reset();
-                    console.log('🔄 Application state reset');
+                    console.log('Application state reset');
                     if (window.udolingoApp?.managers?.ui) {
                         window.udolingoApp.managers.ui.updateUI();
                     }
                 }
             },
 
-            // Feature flags (for future use)
             enableFeature: (featureName) => {
                 localStorage.setItem(`udolingo_feature_${featureName}`, 'true');
-                console.log(`✅ Feature "${featureName}" enabled`);
+                console.log(`Feature "${featureName}" enabled`);
             },
 
             disableFeature: (featureName) => {
                 localStorage.removeItem(`udolingo_feature_${featureName}`);
-                console.log(`❌ Feature "${featureName}" disabled`);
+                console.log(`Feature "${featureName}" disabled`);
             },
 
             isFeatureEnabled: (featureName) => {
                 return localStorage.getItem(`udolingo_feature_${featureName}`) === 'true';
             },
 
-            // Export/import data
             exportData: () => {
                 const data = {
                     version: '1.0.0',
                     timestamp: new Date().toISOString(),
                     lessons: storageManager.getSavedLessons(),
-                    settings: {
-                        // Add any app settings here
-                    }
+                    settings: {}
                 };
                 
                 const blob = new Blob([JSON.stringify(data, null, 2)], 
@@ -183,34 +166,33 @@ export class DebugUtils {
                 a.click();
                 URL.revokeObjectURL(url);
                 
-                console.log('📥 Data exported');
+                console.log('Data exported');
             },
 
-            // Help
             help: () => {
                 console.log(`
-🧰 Udolingo Debug Console Commands:
+Udolingo Debug Console Commands:
 
-📊 Data & Storage:
+Data & Storage:
   - showStorageInfo()     Show storage usage statistics
   - getSavedLessons()     List all saved lessons
   - clearAllLessons()     Delete all saved lessons (with confirmation)
   - exportData()          Export all data to JSON file
 
-🔗 URLs & Sharing:
+URLs & Sharing:
   - generateShareURL()    Generate shareable URL for current lesson
   - generateShareURL(config)  Generate URL for specific config
 
-⚡ State & Config:
+State & Config:
   - getAppState()         Show current application state
   - getCurrentConfig()    Show current lesson configuration
   - resetApp()            Reset application state
 
-🚀 Testing & Performance:
+Testing & Performance:
   - testPerformance()     Run performance benchmarks
   - simulateError('storage')  Simulate errors for testing
 
-🎛️ Features:
+Features:
   - enableFeature(name)   Enable experimental feature
   - disableFeature(name)  Disable experimental feature
   - isFeatureEnabled(name) Check if feature is enabled
@@ -220,41 +202,31 @@ Type any command to run it!
             }
         };
 
-        console.log(`
-🧰 Udolingo Debug Console Ready!
-Type 'udolingoDebug.help()' for available commands.
-        `);
+        console.log('Udolingo Debug Console Ready! Type "udolingoDebug.help()" for available commands.');
     }
 
-    /**
-     * Log application startup information
-     */
     static logStartupInfo() {
         const startTime = performance.now();
         
-        console.group('🚀 Udolingo Startup');
-        console.log('🕐 Start time:', new Date().toISOString());
-        console.log('🌐 User agent:', navigator.userAgent);
-        console.log('📱 Screen size:', `${window.screen.width}x${window.screen.height}`);
-        console.log('📐 Viewport size:', `${window.innerWidth}x${window.innerHeight}`);
-        console.log('💾 Storage available:', typeof(Storage) !== "undefined");
-        console.log('📋 Clipboard API available:', !!navigator.clipboard);
-        console.log('⚡ Performance API available:', !!window.performance);
+        console.group('Udolingo Startup');
+        console.log('Start time:', new Date().toISOString());
+        console.log('User agent:', navigator.userAgent);
+        console.log('Screen size:', `${window.screen.width}x${window.screen.height}`);
+        console.log('Viewport size:', `${window.innerWidth}x${window.innerHeight}`);
+        console.log('Storage available:', typeof(Storage) !== "undefined");
+        console.log('Clipboard API available:', !!navigator.clipboard);
+        console.log('Performance API available:', !!window.performance);
         console.groupEnd();
 
         return startTime;
     }
 
-    /**
-     * Log performance metrics
-     */
     static logPerformanceMetrics(startTime) {
         const loadTime = performance.now() - startTime;
-        console.log(`⚡ App loaded in ${loadTime.toFixed(2)}ms`);
+        console.log(`App loaded in ${loadTime.toFixed(2)}ms`);
         
-        // Log memory usage if available
         if (performance.memory) {
-            console.log('💾 Memory usage:', {
+            console.log('Memory usage:', {
                 used: Math.round(performance.memory.usedJSHeapSize / 1024 / 1024) + 'MB',
                 total: Math.round(performance.memory.totalJSHeapSize / 1024 / 1024) + 'MB',
                 limit: Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024) + 'MB'
@@ -262,13 +234,9 @@ Type 'udolingoDebug.help()' for available commands.
         }
     }
 
-    /**
-     * Validate application state
-     */
     static validateAppState() {
         const issues = [];
 
-        // Check DOM elements
         const criticalElements = [
             'prompt', 'response-container', 'word-bank-container', 
             'submit-btn', 'clear-btn', 'next-btn'
@@ -280,7 +248,6 @@ Type 'udolingoDebug.help()' for available commands.
             }
         });
 
-        // Check localStorage
         try {
             localStorage.setItem('test', 'test');
             localStorage.removeItem('test');
@@ -289,11 +256,11 @@ Type 'udolingoDebug.help()' for available commands.
         }
 
         if (issues.length > 0) {
-            console.error('❌ Application validation issues:', issues);
+            console.error('Application validation issues:', issues);
             return false;
         }
 
-        console.log('✅ Application validation passed');
+        console.log('Application validation passed');
         return true;
     }
 }

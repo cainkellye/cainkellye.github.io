@@ -5,7 +5,7 @@
 
 import { DOM } from '../core/dom.js';
 import { AppState } from '../core/state.js';
-import { ArrayUtils, DOMUtils } from '../utils/helpers.js';
+import { ArrayUtils, UIUtils, ClipboardUtils } from '../utils/helpers.js';
 import { StorageManager } from '../utils/storage-manager.js';
 
 export class UIManager {
@@ -13,9 +13,6 @@ export class UIManager {
         this.storageManager = new StorageManager();
     }
 
-    /**
-     * Set buttons enabled/disabled state
-     */
     setButtonsDisabled(disabled) {
         const buttonIds = [
             'submit', 'clear', 'next', 'shuffle', 'back', 'translate',
@@ -27,9 +24,6 @@ export class UIManager {
         });
     }
 
-    /**
-     * Show response input buttons
-     */
     showResponseButtons() {
         DOM.setVisible('submit', true);
         DOM.setVisible('clear', true);
@@ -37,9 +31,6 @@ export class UIManager {
         DOM.setContent('next', 'Skip');
     }
 
-    /**
-     * Hide response input buttons
-     */
     hideResponseButtons() {
         DOM.setVisible('submit', false);
         DOM.setVisible('clear', false);
@@ -47,16 +38,10 @@ export class UIManager {
         DOM.setContent('next', 'Next');
     }
 
-    /**
-     * Clear word bank container
-     */
     clearWordBank() {
         DOM.clear('wordBankContainer');
     }
 
-    /**
-     * Update vocabulary buttons with language labels
-     */
     updateVocabButtons(langAB) {
         if (!langAB || langAB.length < 2) return;
         DOM.setHTML('vocab1', `${langAB[0]} → ${langAB[1]} 📖`);
@@ -65,9 +50,6 @@ export class UIManager {
         DOM.setVisible('vocab2', true);
     }
 
-    /**
-     * Create a word bank button
-     */
     createWordBankButton(word) {
         const button = DOM.createElement('button', {
             textContent: word,
@@ -78,9 +60,6 @@ export class UIManager {
         return button;
     }
 
-    /**
-     * Handle word bank button click
-     */
     handleWordBankClick(word) {
         const responseContainer = DOM.get('responseContainer');
         if (!responseContainer) return;
@@ -92,9 +71,6 @@ export class UIManager {
         responseContainer.textContent = newResponse;
     }
 
-    /**
-     * Show feedback message
-     */
     showFeedback(isCorrect, feedbackText = '') {
         const feedbackElement = DOM.get('feedback');
         if (!feedbackElement) return;
@@ -108,9 +84,6 @@ export class UIManager {
         }
     }
 
-    /**
-     * Update control buttons based on loaded config
-     */
     updateControlButtons() {
         const hasConfig = AppState.hasExercises();
         DOM.setEnabled('saveCurrent', hasConfig);
@@ -132,41 +105,48 @@ export class UIManager {
         }
     }
 
-    /**
-     * Show configuration modal
-     */
     showConfigModal() {
         DOM.setVisible('configPanel', true);
     }
 
-    /**
-     * Hide configuration modal
-     */
     hideConfigModal() {
         DOM.setVisible('configPanel', false);
     }
 
-    /**
-     * Switch between modal tabs
-     */
     switchTab(tabName) {
-        if (tabName === 'paste') {
-            DOM.get('pasteTab')?.classList.add('active');
-            DOM.get('savedTab')?.classList.remove('active');
-            DOM.get('pasteTabBtn')?.classList.add('active');
-            DOM.get('savedTabBtn')?.classList.remove('active');
-        } else if (tabName === 'saved') {
-            DOM.get('pasteTab')?.classList.remove('active');
-            DOM.get('savedTab')?.classList.add('active');
-            DOM.get('pasteTabBtn')?.classList.remove('active');
-            DOM.get('savedTabBtn')?.classList.add('active');
-            this.refreshSavedLessonsList();
+        const tabConfigs = {
+            paste: {
+                activeTab: 'pasteTab',
+                activeBtn: 'pasteTabBtn',
+                inactiveTab: 'savedTab',
+                inactiveBtn: 'savedTabBtn'
+            },
+            saved: {
+                activeTab: 'savedTab',
+                activeBtn: 'savedTabBtn',
+                inactiveTab: 'pasteTab',
+                inactiveBtn: 'pasteTabBtn',
+                callback: () => this.refreshSavedLessonsList()
+            }
+        };
+
+        const config = tabConfigs[tabName];
+        if (!config) return;
+
+        // Set active states
+        DOM.get(config.activeTab)?.classList.add('active');
+        DOM.get(config.activeBtn)?.classList.add('active');
+        
+        // Remove active states from inactive elements
+        DOM.get(config.inactiveTab)?.classList.remove('active');
+        DOM.get(config.inactiveBtn)?.classList.remove('active');
+
+        // Execute callback if available
+        if (config.callback) {
+            config.callback();
         }
     }
 
-    /**
-     * Refresh the saved lessons list
-     */
     refreshSavedLessonsList() {
         const savedLessons = this.storageManager.getSavedLessons();
         const lessonIds = Object.keys(savedLessons);
@@ -187,14 +167,21 @@ export class UIManager {
         });
     }
 
-    /**
-     * Create a saved lesson item element
-     */
     createSavedLessonItem(lesson) {
         const item = DOM.createElement('div', {
             className: 'saved-lesson-item'
         });
         
+        const info = this._createLessonInfo(lesson);
+        const actions = this._createLessonActions(lesson);
+        
+        item.appendChild(info);
+        item.appendChild(actions);
+        
+        return item;
+    }
+
+    _createLessonInfo(lesson) {
         const info = DOM.createElement('div', {
             className: 'lesson-info'
         });
@@ -214,41 +201,40 @@ export class UIManager {
         info.appendChild(title);
         info.appendChild(details);
         
+        return info;
+    }
+
+    _createLessonActions(lesson) {
         const actions = DOM.createElement('div', {
             className: 'lesson-actions'
         });
         
-        const loadBtn = DOM.createElement('button', {
-            className: 'load-lesson-btn',
-            textContent: 'Load',
-            onClick: () => this.handleLoadLesson(lesson.id)
+        const actionButtons = [
+            {
+                className: 'load-lesson-btn',
+                textContent: 'Load',
+                onClick: () => this.handleLoadLesson(lesson.id)
+            },
+            {
+                className: 'rename-lesson-btn',
+                textContent: 'Rename',
+                onClick: () => this.showRenameModal(lesson.id, lesson.title)
+            },
+            {
+                className: 'delete-lesson-btn',
+                textContent: 'Delete',
+                onClick: () => this.deleteSavedLesson(lesson.id)
+            }
+        ];
+
+        actionButtons.forEach(buttonConfig => {
+            const button = DOM.createElement('button', buttonConfig);
+            actions.appendChild(button);
         });
         
-        const renameBtn = DOM.createElement('button', {
-            className: 'rename-lesson-btn',
-            textContent: 'Rename',
-            onClick: () => this.showRenameModal(lesson.id, lesson.title)
-        });
-        
-        const deleteBtn = DOM.createElement('button', {
-            className: 'delete-lesson-btn',
-            textContent: 'Delete',
-            onClick: () => this.deleteSavedLesson(lesson.id)
-        });
-        
-        actions.appendChild(loadBtn);
-        actions.appendChild(renameBtn);
-        actions.appendChild(deleteBtn);
-        
-        item.appendChild(info);
-        item.appendChild(actions);
-        
-        return item;
+        return actions;
     }
 
-    /**
-     * Handle loading a saved lesson
-     */
     handleLoadLesson(lessonId) {
         import('./config-manager.js').then(({ ConfigManager }) => {
             const configManager = new ConfigManager();
@@ -256,9 +242,6 @@ export class UIManager {
         });
     }
 
-    /**
-     * Show rename modal
-     */
     showRenameModal(lessonId, currentTitle) {
         AppState.currentRenameId = lessonId;
         
@@ -272,28 +255,27 @@ export class UIManager {
         DOM.setVisible('renameModal', true);
     }
 
-    /**
-     * Hide rename modal
-     */
     hideRenameModal() {
         DOM.setVisible('renameModal', false);
         AppState.currentRenameId = null;
         DOM.setContent('renameInput', '');
     }
 
-    /**
-     * Delete saved lesson with confirmation
-     */
     deleteSavedLesson(lessonId) {
         const lesson = this.storageManager.getSavedLesson(lessonId);
-        if (lesson && confirm(`Are you sure you want to delete "${lesson.title}"?`)) {
-            const success = this.storageManager.deleteLesson(lessonId);
-            if (success) {
-                this.refreshSavedLessonsList();
-            } else {
-                alert("Failed to delete lesson. Please try again.");
+        if (!lesson) return;
+
+        UIUtils.confirm(
+            `Are you sure you want to delete "${lesson.title}"?`,
+            () => {
+                const success = this.storageManager.deleteLesson(lessonId);
+                if (success) {
+                    this.refreshSavedLessonsList();
+                } else {
+                    UIUtils.showError("Failed to delete lesson. Please try again.");
+                }
             }
-        }
+        );
     }
 
     /**
@@ -304,9 +286,6 @@ export class UIManager {
         DOM.setEnabled('loadSaveConfig', isValid);
     }
 
-    /**
-     * Update the main lesson display
-     */
     updateLessonDisplay(exerciseData, progress) {
         if (!exerciseData) {
             DOM.setContent('prompt', 'No exercises loaded.');
@@ -342,9 +321,6 @@ export class UIManager {
         AppState.prevResponses = [];
     }
 
-    /**
-     * Show storage info modal (for debugging)
-     */
     showStorageInfo() {
         const info = this.storageManager.getStorageInfo();
         const message = `Storage Info:
@@ -358,41 +334,8 @@ Estimated Quota: ${info.estimatedQuota}`;
         alert(message);
     }
 
-    /**
-     * Update progress indicator if available
-     */
-    updateProgress(progress) {
-        // This can be extended to show a progress bar or other indicators
-        console.log(`Progress: ${progress.current}/${progress.total} (${progress.percentage}%)`);
-    }
-
-    /**
-     * Show error message to user
-     */
-    showError(message, details = '') {
-        console.error('UI Error:', message, details);
-        
-        // Show user-friendly error
-        const userMessage = typeof message === 'string' ? message : 
-            'An error occurred. Please check the console for details.';
-        alert(userMessage);
-    }
-
-    /**
-     * Show success message to user
-     */
-    showSuccess(message) {
-        console.log('Success:', message);
-        // Could be enhanced with toast notifications
-        alert(message);
-    }
-
-    /**
-     * Update the entire UI based on current state
-     */
     updateUI() {
         this.updateControlButtons();
-        this.updateProgress(AppState.getProgress());
         
         if (AppState.config) {
             this.updateVocabButtons(AppState.config['langA-B']);

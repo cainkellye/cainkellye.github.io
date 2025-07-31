@@ -7,9 +7,6 @@ import { AppState } from '../core/state.js';
 import { ArrayUtils } from '../utils/helpers.js';
 
 export class DirectionManager {
-    /**
-     * Initialize randomized directions for all exercises
-     */
     initializeDirections() {
         if (!AppState.hasExercises()) return;
         
@@ -32,12 +29,9 @@ export class DirectionManager {
         AppState.exerciseDirections = directions;
         AppState.currentCycle = 0;
         
-        console.log('?? Exercise directions initialized');
+        console.log('Exercise directions initialized');
     }
 
-    /**
-     * Get current direction for an exercise
-     */
     getCurrentDirection(exerciseIndex) {
         if (AppState.exerciseDirections.length === 0) {
             this.initializeDirections();
@@ -51,31 +45,22 @@ export class DirectionManager {
         return baseDirection;
     }
 
-    /**
-     * Check if we need to advance to the next cycle
-     */
     checkAndAdvanceCycle() {
         if (AppState.currentCycle === 0) {
             // We've completed the first cycle, move to second cycle
             AppState.currentCycle = 1;
-            console.log('?? Advanced to cycle 2 (flipped directions)');
+            console.log('Advanced to cycle 2 (flipped directions)');
         } else if (AppState.currentCycle === 1) {
             // Reset and initialize new directions
             this.initializeDirections();
-            console.log('?? Reset to cycle 1 with new directions');
+            console.log('Reset to cycle 1 with new directions');
         }
     }
 
-    /**
-     * Shuffle directions (called when shuffle button is pressed)
-     */
     shuffleDirections() {
         this.initializeDirections();
     }
 
-    /**
-     * Get direction statistics
-     */
     getDirectionStats() {
         if (!AppState.exerciseDirections.length) {
             return { AtoB: 0, BtoA: 0 };

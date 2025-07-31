@@ -4,7 +4,7 @@
  */
 
 import { DOM } from '../core/dom.js';
-import { PlatformUtils } from '../utils/helpers.js';
+import { ClipboardUtils, UIUtils } from '../utils/helpers.js';
 
 export class LLMPromptGenerator {
     constructor() {
@@ -159,22 +159,38 @@ export class LLMPromptGenerator {
             'law and government',
             'religion and philosophy'
         ];
+
+        // Difficulty level configurations
+        this.difficultyLevels = {
+            '1': 'Use simple vocabulary, basic sentence structures, present tense, and common everyday expressions. Avoid complex grammar and idioms.',
+            '2': 'Use elementary vocabulary with simple present, past and future tenses. Include basic adjectives and common phrases.',
+            '3': 'Use intermediate vocabulary with various tenses, conditional sentences, and some idiomatic expressions.',
+            '4': 'Use advanced vocabulary, complex sentence structures, subjunctive mood, and challenging idiomatic expressions.',
+            '5': 'Use expert-level vocabulary, complex grammar structures, subtle nuances, literary expressions, and sophisticated language traps.'
+        };
+
+        // Noise level configurations
+        this.noiseLevels = {
+            low: 'Include 2-3 distractor words for each language.',
+            average: 'Include 3-4 distractor words for each language.',
+            high: 'Include 5-6 distractor words for each language.',
+            auto: ''
+        };
     }
 
-    /**
-     * Initialize the LLM prompt generator
-     */
     init() {
         this.initializeDropdowns();
         this.loadSavedSettings();
         console.log('LLM Prompt Generator initialized');
     }
 
-    /**
-     * Initialize language and subject dropdowns
-     */
     initializeDropdowns() {
-        // Populate subject datalist
+        this._populateSubjectsList();
+        this.initializeLanguageDropdown('langA');
+        this.initializeLanguageDropdown('langB');
+    }
+    
+    _populateSubjectsList() {
         const subjectsList = DOM.get('subjects-list');
         if (subjectsList) {
             this.subjects.forEach(subject => {
@@ -183,26 +199,32 @@ export class LLMPromptGenerator {
                 subjectsList.appendChild(option);
             });
         }
-
-        // Initialize custom language dropdowns
-        this.initializeLanguageDropdown('langA');
-        this.initializeLanguageDropdown('langB');
     }
 
-    /**
-     * Initialize a custom language dropdown
-     */
     initializeLanguageDropdown(dropdownId) {
+        const elements = this._getDropdownElements(dropdownId);
+        if (!elements) return;
+
+        const { dropdown, input, options } = elements;
+
+        this._populateDropdownOptions(dropdownId, options);
+        this._setupDropdownEvents(dropdownId, input, dropdown);
+    }
+
+    _getDropdownElements(dropdownId) {
         const dropdown = DOM.get(`${dropdownId}-dropdown`);
         const input = DOM.get(`${dropdownId}-input`);
         const options = DOM.get(`${dropdownId}-options`);
         
         if (!dropdown || !input || !options) {
             console.warn(`Language dropdown elements not found for ${dropdownId}`);
-            return;
+            return null;
         }
 
-        // Populate options
+        return { dropdown, input, options };
+    }
+
+    _populateDropdownOptions(dropdownId, options) {
         options.innerHTML = '';
         this.languages.forEach(lang => {
             const option = document.createElement('div');
@@ -214,14 +236,16 @@ export class LLMPromptGenerator {
             });
             options.appendChild(option);
         });
+    }
 
-        // Add click event to input to toggle dropdown
+    _setupDropdownEvents(dropdownId, input, dropdown) {
+        // Toggle dropdown on click
         input.addEventListener('click', (e) => {
             e.stopPropagation();
             this.toggleDropdown(dropdownId);
         });
 
-        // Add keyboard navigation
+        // Keyboard navigation
         input.addEventListener('keydown', (e) => {
             this.handleKeyboardNavigation(dropdownId, e);
         });
@@ -234,9 +258,6 @@ export class LLMPromptGenerator {
         });
     }
 
-    /**
-     * Handle keyboard navigation in dropdowns
-     */
     handleKeyboardNavigation(dropdownId, e) {
         const dropdown = DOM.get(`${dropdownId}-dropdown`);
         const options = DOM.get(`${dropdownId}-options`);
@@ -244,55 +265,56 @@ export class LLMPromptGenerator {
 
         if (!dropdown || !options) return;
 
-        // If dropdown is closed and user presses a letter, open it and jump to that letter
-        if (!isOpen && e.key.length === 1 && e.key.match(/[a-zA-Z]/)) {
-            e.preventDefault();
-            this.toggleDropdown(dropdownId);
-            setTimeout(() => {
-                this.jumpToLetter(dropdownId, e.key.toLowerCase());
-            }, 10);
-            return;
+        // Handle different key events
+        if (!isOpen && this._isLetterKey(e.key)) {
+            this._openAndJumpToLetter(dropdownId, e);
+        } else if (isOpen) {
+            this._handleOpenDropdownKeys(dropdownId, e, options);
         }
+    }
 
-        // If dropdown is open, handle navigation
-        if (isOpen) {
-            switch (e.key) {
-                case 'Escape':
-                    e.preventDefault();
-                    this.closeDropdown(dropdownId);
-                    break;
-                case 'ArrowDown':
-                    e.preventDefault();
-                    this.navigateOptions(dropdownId, 1);
-                    break;
-                case 'ArrowUp':
-                    e.preventDefault();
-                    this.navigateOptions(dropdownId, -1);
-                    break;
-                case 'Enter':
-                    e.preventDefault();
-                    const highlighted = options.querySelector('.dropdown-option.highlighted');
-                    if (highlighted) {
-                        const langCode = highlighted.dataset.code;
-                        const language = this.languages.find(l => l.code === langCode);
-                        if (language) {
-                            this.selectLanguage(dropdownId, language);
-                        }
-                    }
-                    break;
-                default:
-                    if (e.key.length === 1 && e.key.match(/[a-zA-Z]/)) {
-                        e.preventDefault();
-                        this.jumpToLetter(dropdownId, e.key.toLowerCase());
-                    }
-                    break;
+    _isLetterKey(key) {
+        return key.length === 1 && key.match(/[a-zA-Z]/);
+    }
+
+    _openAndJumpToLetter(dropdownId, e) {
+        e.preventDefault();
+        this.toggleDropdown(dropdownId);
+        setTimeout(() => {
+            this.jumpToLetter(dropdownId, e.key.toLowerCase());
+        }, 10);
+    }
+
+    _handleOpenDropdownKeys(dropdownId, e, options) {
+        const keyActions = {
+            'Escape': () => this.closeDropdown(dropdownId),
+            'ArrowDown': () => this.navigateOptions(dropdownId, 1),
+            'ArrowUp': () => this.navigateOptions(dropdownId, -1),
+            'Enter': () => this._selectHighlightedOption(options)
+        };
+
+        const action = keyActions[e.key];
+        if (action) {
+            e.preventDefault();
+            action();
+        } else if (this._isLetterKey(e.key)) {
+            e.preventDefault();
+            this.jumpToLetter(dropdownId, e.key.toLowerCase());
+        }
+    }
+
+    _selectHighlightedOption(options) {
+        const highlighted = options.querySelector('.dropdown-option.highlighted');
+        if (highlighted) {
+            const langCode = highlighted.dataset.code;
+            const language = this.languages.find(l => l.code === langCode);
+            if (language) {
+                const dropdownId = highlighted.closest('.custom-dropdown').id.replace('-dropdown', '');
+                this.selectLanguage(dropdownId, language);
             }
         }
     }
 
-    /**
-     * Jump to first language starting with the given letter
-     */
     jumpToLetter(dropdownId, letter) {
         const options = DOM.get(`${dropdownId}-options`);
         if (!options) return;
@@ -313,9 +335,6 @@ export class LLMPromptGenerator {
         }
     }
 
-    /**
-     * Navigate through options with arrow keys
-     */
     navigateOptions(dropdownId, direction) {
         const options = DOM.get(`${dropdownId}-options`);
         if (!options) return;
@@ -340,9 +359,6 @@ export class LLMPromptGenerator {
         }
     }
 
-    /**
-     * Toggle dropdown open/close
-     */
     toggleDropdown(dropdownId) {
         const dropdown = DOM.get(`${dropdownId}-dropdown`);
         if (!dropdown) return;
@@ -359,9 +375,6 @@ export class LLMPromptGenerator {
         }
     }
 
-    /**
-     * Close a specific dropdown
-     */
     closeDropdown(dropdownId) {
         const dropdown = DOM.get(`${dropdownId}-dropdown`);
         if (dropdown) {
@@ -376,9 +389,6 @@ export class LLMPromptGenerator {
         }
     }
 
-    /**
-     * Close all dropdowns
-     */
     closeAllDropdowns() {
         document.querySelectorAll('.custom-dropdown').forEach(dropdown => {
             dropdown.classList.remove('open');
@@ -388,19 +398,24 @@ export class LLMPromptGenerator {
         });
     }
 
-    /**
-     * Select a language in a dropdown
-     */
     selectLanguage(dropdownId, language) {
+        this._updateLanguageInput(dropdownId, language);
+        this._updateDropdownSelection(dropdownId, language);
+        this.closeDropdown(dropdownId);
+        this.saveCurrentSettings();
+        this.generatePrompt();
+    }
+
+    _updateLanguageInput(dropdownId, language) {
         const input = DOM.get(`${dropdownId}-input`);
-        const options = DOM.get(`${dropdownId}-options`);
-        
         if (input) {
             input.value = language.name;
             input.dataset.code = language.code;
         }
-        
-        // Update selected option styling
+    }
+
+    _updateDropdownSelection(dropdownId, language) {
+        const options = DOM.get(`${dropdownId}-options`);
         if (options) {
             options.querySelectorAll('.dropdown-option').forEach(opt => {
                 opt.classList.remove('selected');
@@ -410,232 +425,183 @@ export class LLMPromptGenerator {
                 selectedOption.classList.add('selected');
             }
         }
-        
-        this.closeDropdown(dropdownId);
-        this.saveCurrentSettings();
-        this.generatePrompt();
     }
 
-    /**
-     * Get language code from input
-     */
     getLanguageCode(dropdownId) {
         const input = DOM.get(`${dropdownId}-input`);
         return input?.dataset.code || 'en';
     }
 
-    /**
-     * Get language name from code
-     */
     getLanguageName(code) {
         const lang = this.languages.find(l => l.code === code);
         return lang ? lang.name : code;
     }
 
-    /**
-     * Save current settings to localStorage
-     */
     saveCurrentSettings() {
         try {
-            const settings = {
-                langA: this.getLanguageCode('langA'),
-                langB: this.getLanguageCode('langB'),
-                exerciseCount: DOM.get('exercisesCount')?.value || '20',
-                difficulty: document.querySelector('input[name="difficulty"]:checked')?.value || '3',
-                subject: DOM.get('subjectInput')?.value || 'general conversation',
-                noise: document.querySelector('input[name="noise"]:checked')?.value || 'auto'
-            };
-
-            Object.keys(settings).forEach(key => {
-                localStorage.setItem(this.storageKeys[key], settings[key]);
-            });
-
+            const settings = this._gatherCurrentSettings();
+            this._saveSettingsToStorage(settings);
             console.log('?? LLM generator settings saved');
         } catch (error) {
             console.error('Error saving LLM generator settings:', error);
         }
     }
 
-    /**
-     * Load saved settings from localStorage
-     */
+    _gatherCurrentSettings() {
+        return {
+            langA: this.getLanguageCode('langA'),
+            langB: this.getLanguageCode('langB'),
+            exerciseCount: DOM.get('exercisesCount')?.value || '20',
+            difficulty: document.querySelector('input[name="difficulty"]:checked')?.value || '3',
+            subject: DOM.get('subjectInput')?.value || 'general conversation',
+            noise: document.querySelector('input[name="noise"]:checked')?.value || 'auto'
+        };
+    }
+
+    _saveSettingsToStorage(settings) {
+        Object.keys(settings).forEach(key => {
+            localStorage.setItem(this.storageKeys[key], settings[key]);
+        });
+    }
+
     loadSavedSettings() {
         try {
-            // Load language A
-            const langACode = localStorage.getItem(this.storageKeys.langA) || 'en';
-            const langA = this.languages.find(l => l.code === langACode);
-            if (langA) {
-                this.selectLanguageWithoutSave('langA', langA);
-            }
-
-            // Load language B
-            const langBCode = localStorage.getItem(this.storageKeys.langB) || 'es';
-            const langB = this.languages.find(l => l.code === langBCode);
-            if (langB) {
-                this.selectLanguageWithoutSave('langB', langB);
-            }
-
-            // Load other settings
-            const exerciseCount = localStorage.getItem(this.storageKeys.exerciseCount);
-            if (exerciseCount) {
-                const input = DOM.get('exercisesCount');
-                if (input) input.value = exerciseCount;
-            }
-
-            const difficulty = localStorage.getItem(this.storageKeys.difficulty);
-            if (difficulty) {
-                const radio = document.querySelector(`input[name="difficulty"][value="${difficulty}"]`);
-                if (radio) radio.checked = true;
-            }
-
-            const subject = localStorage.getItem(this.storageKeys.subject);
-            if (subject) {
-                const input = DOM.get('subjectInput');
-                if (input) input.value = subject;
-            }
-
-            const noise = localStorage.getItem(this.storageKeys.noise);
-            if (noise) {
-                const radio = document.querySelector(`input[name="noise"][value="${noise}"]`);
-                if (radio) radio.checked = true;
-            }
-
+            this._loadLanguageSettings();
+            this._loadOtherSettings();
             console.log('LLM generator settings loaded');
         } catch (error) {
             console.error('Error loading LLM generator settings:', error);
         }
     }
 
-    /**
-     * Select language without triggering save (used during initial load)
-     */
-    selectLanguageWithoutSave(dropdownId, language) {
-        const input = DOM.get(`${dropdownId}-input`);
-        const options = DOM.get(`${dropdownId}-options`);
-        
-        if (input) {
-            input.value = language.name;
-            input.dataset.code = language.code;
+    _loadLanguageSettings() {
+        // Load language A
+        const langACode = localStorage.getItem(this.storageKeys.langA) || 'en';
+        const langA = this.languages.find(l => l.code === langACode);
+        if (langA) {
+            this.selectLanguageWithoutSave('langA', langA);
         }
-        
-        if (options) {
-            options.querySelectorAll('.dropdown-option').forEach(opt => {
-                opt.classList.remove('selected');
-            });
-            const selectedOption = options.querySelector(`[data-code="${language.code}"]`);
-            if (selectedOption) {
-                selectedOption.classList.add('selected');
+
+        // Load language B
+        const langBCode = localStorage.getItem(this.storageKeys.langB) || 'es';
+        const langB = this.languages.find(l => l.code === langBCode);
+        if (langB) {
+            this.selectLanguageWithoutSave('langB', langB);
+        }
+    }
+
+    _loadOtherSettings() {
+        const settingsMap = [
+            { key: 'exerciseCount', elementId: 'exercisesCount', type: 'input' },
+            { key: 'subject', elementId: 'subjectInput', type: 'input' },
+            { key: 'difficulty', selector: 'input[name="difficulty"]', type: 'radio' },
+            { key: 'noise', selector: 'input[name="noise"]', type: 'radio' }
+        ];
+
+        settingsMap.forEach(setting => {
+            const value = localStorage.getItem(this.storageKeys[setting.key]);
+            if (value) {
+                this._applySetting(setting, value);
             }
+        });
+    }
+
+    _applySetting(setting, value) {
+        if (setting.type === 'input' && setting.elementId) {
+            const input = DOM.get(setting.elementId);
+            if (input) input.value = value;
+        } else if (setting.type === 'radio' && setting.selector) {
+            const radio = document.querySelector(`${setting.selector}[value="${value}"]`);
+            if (radio) radio.checked = true;
         }
     }
 
-    /**
-     * Generate difficulty-specific instructions
-     */
+    selectLanguageWithoutSave(dropdownId, language) {
+        this._updateLanguageInput(dropdownId, language);
+        this._updateDropdownSelection(dropdownId, language);
+    }
+
     getDifficultyInstructions(level) {
-        switch (level) {
-            case '1':
-                return 'Use simple vocabulary, basic sentence structures, present tense, and common everyday expressions. Avoid complex grammar and idioms.';
-            case '2':
-                return 'Use elementary vocabulary with simple present, past and future tenses. Include basic adjectives and common phrases.';
-            case '3':
-                return 'Use intermediate vocabulary with various tenses, conditional sentences, and some idiomatic expressions.';
-            case '4':
-                return 'Use advanced vocabulary, complex sentence structures, subjunctive mood, and challenging idiomatic expressions.';
-            case '5':
-                return 'Use expert-level vocabulary, complex grammar structures, subtle nuances, literary expressions, and sophisticated language traps.';
-            default:
-                return 'Use intermediate level vocabulary and grammar.';
-        }
+        return this.difficultyLevels[level] || this.difficultyLevels['3'];
     }
 
-    /**
-     * Generate noise instructions
-     */
     getNoiseInstructions(noiseLevel) {
+        if (noiseLevel === 'auto') {
+            return '';
+        }
+        
         const general = `
 - Noise: distractors should fit phonetically or semantically, but not contain words from the actual sentence/translation. `;
-        switch (noiseLevel) {
-            case 'low':
-                return `${general}Include 2-3 distractor words for each language.`;
-            case 'average':
-                return `${general}Include 3-4 distractor words for each language.`;
-            case 'high':
-                return `${general}Include 5-6 distractor words for each language.`;
-            case 'auto':
-            default:
-                return '';
-        }
+        const specific = this.noiseLevels[noiseLevel] || this.noiseLevels['average'];
+        return `${general}${specific}`;
     }
 
-    /**
-     * Generate the complete LLM prompt
-     */
     generatePrompt() {
-        const langACode = this.getLanguageCode('langA');
-        const langBCode = this.getLanguageCode('langB');
-        const langAName = this.getLanguageName(langACode);
-        const langBName = this.getLanguageName(langBCode);
-        const exerciseCount = DOM.get('exercisesCount')?.value || '20';
-        const subject = DOM.get('subjectInput')?.value || 'general conversation';
-
-        const difficultyLevel = document.querySelector('input[name="difficulty"]:checked')?.value || '3';
-        const noiseLevel = document.querySelector('input[name="noise"]:checked')?.value || 'average';
-
-        const difficultyInstructions = this.getDifficultyInstructions(difficultyLevel);
-        const noiseInstructions = this.getNoiseInstructions(noiseLevel);
-
-        const noiseFormat = noiseLevel === 'auto' ? '' : `,
-      "noiseA": <space-separated distractor words for ${langAName}>,
-      "noiseB": <space-separated distractor words for ${langBName}>`;
-
-        const prompt = `Generate a JSON object for a bilingual language lesson in the following format:
-
-{
-  "title": <string>,
-  "langA-B": ["${langACode}", "${langBCode}"],
-  "exercises": [
-    {
-      "A": <sentence in ${langAName}>,
-      "B": <exact translation in ${langBName}>${noiseFormat}
-    },
-    // ...more exercises
-  ]
-}
-
-Instructions:
-- Generate ${exerciseCount} exercises total.
-- Theme/Subject: ${subject}.
-- Difficulty Level: ${difficultyLevel}/5 - ${difficultyInstructions}${noiseInstructions}
-- For some exercises, fields A and B may be multiple shorter sentences, if the full content remains natural and boundaries are preserved.
-- Translations must be accurate and straightforward in both directions.
-- Create a short, descriptive title that reflects the theme and difficulty level.
-- Output valid JSON in the format above.`;
-
+        const promptData = this._gatherPromptData();
+        const prompt = this._buildPromptText(promptData);
+        
         const generatedPrompt = DOM.get('generatedPrompt');
         if (generatedPrompt) {
             generatedPrompt.value = prompt;
         }
     }
 
-    /**
-     * Show the LLM prompt modal
-     */
+    _gatherPromptData() {
+        const langACode = this.getLanguageCode('langA');
+        const langBCode = this.getLanguageCode('langB');
+        
+        return {
+            langACode,
+            langBCode,
+            langAName: this.getLanguageName(langACode),
+            langBName: this.getLanguageName(langBCode),
+            exerciseCount: DOM.get('exercisesCount')?.value || '20',
+            subject: DOM.get('subjectInput')?.value || 'general conversation',
+            difficultyLevel: document.querySelector('input[name="difficulty"]:checked')?.value || '3',
+            noiseLevel: document.querySelector('input[name="noise"]:checked')?.value || 'average'
+        };
+    }
+
+    _buildPromptText(data) {
+        const difficultyInstructions = this.getDifficultyInstructions(data.difficultyLevel);
+        const noiseInstructions = this.getNoiseInstructions(data.noiseLevel);
+        const noiseFormat = data.noiseLevel === 'auto' ? '' : `,
+      "noiseA": <space-separated distractor words for ${data.langAName}>,
+      "noiseB": <space-separated distractor words for ${data.langBName}>`;
+
+        return `Generate a JSON object for a bilingual language lesson in the following format:
+
+{
+  "title": <string>,
+  "langA-B": ["${data.langACode}", "${data.langBCode}"],
+  "exercises": [
+    {
+      "A": <sentence in ${data.langAName}>,
+      "B": <exact translation in ${data.langBName}>${noiseFormat}
+    },
+    // ...more exercises
+  ]
+}
+
+Instructions:
+- Generate ${data.exerciseCount} exercises total.
+- Theme/Subject: ${data.subject}.
+- Difficulty Level: ${data.difficultyLevel}/5 - ${difficultyInstructions}${noiseInstructions}
+- For some exercises, fields A and B may be multiple shorter sentences, if the full content remains natural and boundaries are preserved.
+- Translations must be accurate and straightforward in both directions.
+- Create a short, descriptive title that reflects the theme and difficulty level.
+- Output valid JSON in the format above.`;
+    }
+
     showModal() {
         DOM.setVisible('llmPromptModal', true);
         this.generatePrompt();
     }
 
-    /**
-     * Hide the LLM prompt modal
-     */
     hideModal() {
         DOM.setVisible('llmPromptModal', false);
     }
 
-    /**
-     * Copy prompt to clipboard
-     */
     async copyToClipboard() {
         const prompt = DOM.get('generatedPrompt')?.value;
         if (!prompt) {
@@ -644,15 +610,10 @@ Instructions:
         }
 
         try {
-            if (PlatformUtils.hasClipboardAPI()) {
-                await navigator.clipboard.writeText(prompt);
-                alert('LLM prompt copied to clipboard!');
-            } else {
-                PlatformUtils.fallbackCopyToClipboard(prompt);
-            }
+            await ClipboardUtils.copyText(prompt, 'LLM prompt copied to clipboard!');
         } catch (error) {
-            console.error('Failed to copy to clipboard:', error);
-            PlatformUtils.fallbackCopyToClipboard(prompt);
+            console.error('Failed to copy LLM prompt to clipboard:', error);
+            UIUtils.showError('Failed to copy prompt to clipboard');
         }
     }
 }

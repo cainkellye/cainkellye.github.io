@@ -1,4 +1,4 @@
-/**
+ï»¿/**
  * Utility Functions
  */
 
@@ -38,39 +38,14 @@ export const ArrayUtils = {
 
 export const StringUtils = {
     removePunctuation(sentence) {
-        if (sentence == null) {
-            console.warn('StringUtils.removePunctuation: Input is null or undefined');
-            return '';
-        }
-        
-        if (typeof sentence !== 'string') {
-            console.warn('StringUtils.removePunctuation: Input is not a string, converting...');
-            sentence = String(sentence);
-        }
-        
-        return sentence.replace(/[.,!?¿¡—–\()"]/g, '');
+        return sentence.replace(/[.,!?Â¿Â¡â€”â€“\()"]/g, '');
     },
 
     splitSentence(sentence) {
-        if (sentence == null) {
-            console.warn('StringUtils.splitSentence: Input is null or undefined');
-            return [];
-        }
-        
-        if (typeof sentence !== 'string') {
-            console.warn('StringUtils.splitSentence: Input is not a string, converting...');
-            sentence = String(sentence);
-        }
-        
         return sentence.split(/\s+/).filter(Boolean);
     },
 
     splitSentenceClean(sentence) {
-        if (sentence == null) {
-            console.warn('StringUtils.splitSentenceClean: Input is null or undefined');
-            return [];
-        }
-        
         return this.splitSentence(this.removePunctuation(sentence));
     },
 

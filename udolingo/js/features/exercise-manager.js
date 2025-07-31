@@ -106,7 +106,6 @@ export class ExerciseManager {
         AppState.solutionLang = exerciseData.solutionLang;
 
         const progress = AppState.getProgress();
-
         this.uiManager.updateLessonDisplay(exerciseData, progress);
 
         console.log(`Loaded exercise ${progress.current}/${progress.total} (${currentDirection})`);

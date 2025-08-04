@@ -5,7 +5,7 @@
 
 import { AppState } from '../core/state.js';
 import { DOM } from '../core/dom.js';
-import { ValidationUtils, ClipboardUtils, UIUtils } from '../utils/helpers.js';
+import { ValidationUtils, ClipboardUtils, UIUtils, ArrayUtils, StringUtils } from '../utils/helpers.js';
 import { StorageManager } from '../utils/storage-manager.js';
 import { URLHandler } from '../utils/url-handler.js';
 import { DirectionManager } from '../features/direction-manager.js';
@@ -35,6 +35,10 @@ export class ConfigManager {
 
             // Update application state
             AppState.updateConfig(configData);
+            AppState.vocab = {
+                'A': this._generateVocabulary(configData, 'A'),
+                'B': this._generateVocabulary(configData, 'B')
+            };
 
             // Initialize exercise directions
             const directionManager = new DirectionManager();
@@ -109,6 +113,20 @@ export class ConfigManager {
             console.error('Clipboard load failed:', error);
             alert("The clipboard does not contain a valid Udolingo lesson.");
         }
+    }
+
+    _generateVocabulary(configData, lang) {
+        const words = [];
+        
+        configData.exercises.forEach(exercise => {
+            const sentence = lang === 'A' ? exercise.A : exercise.B;
+            if (sentence) {
+                const exerciseWords = StringUtils.splitSentenceClean(sentence);
+                words.push(...exerciseWords);
+            }
+        });
+
+        return ArrayUtils.removeDuplicates(words, false);
     }
 
     _processSuccessfulLoad(newConfig, configInput) {

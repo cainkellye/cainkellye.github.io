@@ -48,35 +48,13 @@ export class ExerciseManager {
     }
 
     generateNoise(lang, count, solution) {
-        const words = this.generateVocabulary(lang, 0);
+        const words = AppState.vocab[lang];
 
         const solutionWords = StringUtils.splitSentenceClean(solution).map(w => w.toLowerCase());
         const filteredWords = words.filter(word => !solutionWords.includes(word.toLowerCase()));
 
         ArrayUtils.shuffle(filteredWords);
         return ArrayUtils.removeDuplicates(filteredWords, false).slice(0, count).join(' ');
-    }
-
-    generateVocabulary(lang, minLength = 0) {
-        const words = [];
-        
-        AppState.exercises.forEach(exercise => {
-            const sentence = lang === 'A' ? exercise.A : exercise.B;
-            if (sentence) {
-                const exerciseWords = StringUtils.splitSentenceClean(sentence);
-                if (minLength === 0) {
-                    words.push(...exerciseWords);
-                } else {
-                    exerciseWords.forEach(word => {
-                        if (word.length >= minLength) {
-                            words.push(word);
-                        }
-                    });
-                }
-            }
-        });
-
-        return ArrayUtils.removeDuplicates(words, false);
     }
 
     loadExercise(index) {

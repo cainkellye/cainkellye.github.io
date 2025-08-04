@@ -52,19 +52,16 @@ export class EventManager {
      */
     setupAnswerSubmissionEvents() {
         DOM.addEventListener('submit', 'click', async () => {
-            const responseContainer = DOM.get('responseContainer');
-            if (responseContainer) {
-                const userResponse = responseContainer.textContent.trim();
-                try {
-                    await this.answerValidator.validateAnswer(userResponse);
-                } catch (error) {
-                    console.error('Error validating answer:', error);
-                    // Show user-friendly error message
-                    const feedback = DOM.get('feedback');
-                    if (feedback) {
-                        feedback.textContent = 'Error validating answer. Please try again.';
-                        feedback.style.color = 'red';
-                    }
+            const userResponse = this.uiManager.flattenResponse();
+            try {
+                await this.answerValidator.validateAnswer(userResponse);
+            } catch (error) {
+                console.error('Error validating answer:', error);
+                // Show user-friendly error message
+                const feedback = DOM.get('feedback');
+                if (feedback) {
+                    feedback.textContent = 'Error validating answer. Please try again.';
+                    feedback.style.color = 'red';
                 }
             }
         });
@@ -75,17 +72,7 @@ export class EventManager {
      */
     setupResponseManagementEvents() {
         DOM.addEventListener('clear', 'click', () => {
-            DOM.setContent('responseContainer', '');
-            AppState.prevResponses = [];
-        });
-
-        DOM.addEventListener('back', 'click', () => {
-            if (AppState.prevResponses.length > 0) {
-                const previousResponse = AppState.prevResponses.pop();
-                DOM.setContent('responseContainer', previousResponse);
-            } else {
-                DOM.setContent('responseContainer', '');
-            }
+            this.uiManager.clearResponse();
         });
     }
 

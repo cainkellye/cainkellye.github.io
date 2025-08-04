@@ -51,6 +51,7 @@ export class ConfigManager {
             // Update UI
             this.uiManager.updateVocabButtons(configData['langA-B']);
             this.uiManager.updateControlButtons();
+            this.uiManager.updateTitle(configData.title);
 
             // Clear mistakes for new lesson
             AppState.clearMistakes();

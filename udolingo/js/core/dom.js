@@ -19,7 +19,6 @@ export class DOMElements {
             // Action buttons
             submit: this.getElement('submit-btn'),
             clear: this.getElement('clear-btn'),
-            back: this.getElement('back-btn'),
             next: this.getElement('next-btn'),
             translate: this.getElement('translate-btn'),
             
@@ -121,6 +120,13 @@ export class DOMElements {
         const element = this.get(elementId);
         if (element) {
             element.innerHTML = html;
+        }
+    }
+
+    setImage(elementId, src) {
+        const element = this.get(elementId);
+        if (element && element.tagName === 'IMG') {
+            element.src = src;
         }
     }
 

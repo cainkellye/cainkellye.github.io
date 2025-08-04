@@ -10,7 +10,6 @@ export const AppState = {
     config: null,
     
     // User interaction state
-    prevResponses: [],
     mistakes: [],
     
     // Language and direction state
@@ -26,7 +25,6 @@ export const AppState = {
         this.currentTaskIndex = 0;
         this.exercises = [];
         this.config = null;
-        this.prevResponses = [];
         this.promptLang = '';
         this.solutionLang = '';
         this.exerciseDirections = [];
@@ -71,7 +69,6 @@ export const AppState = {
     nextExercise() {
         if (this.hasExercises()) {
             this.currentTaskIndex = (this.currentTaskIndex + 1) % this.exercises.length;
-            this.prevResponses = [];
             return this.currentTaskIndex === 0; // Returns true if cycle completed
         }
         return false;

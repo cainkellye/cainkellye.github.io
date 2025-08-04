@@ -13,9 +13,43 @@ export class UIManager {
         this.storageManager = new StorageManager();
     }
 
+    updateLessonDisplay(exerciseData, progress) {
+        if (!exerciseData) {
+            DOM.setContent('prompt', 'No exercises loaded.');
+            this.setButtonsDisabled(true);
+            return;
+        }
+
+        this.setButtonsDisabled(false);
+        this.showResponseButtons();
+        this.updateLessonMascot('normal');
+
+        // Display exercise counter and prompt
+        const promptText = `${progress.current}/${progress.total}. Translate this: "${exerciseData.prompt}"`;
+        DOM.setContent('prompt', promptText);
+
+        // Create word bank
+        const words = [...exerciseData.solutionWords, ...exerciseData.noiseWords];
+        ArrayUtils.shuffle(words);
+
+        this.clearWordBank();
+        const wordBankContainer = DOM.get('wordBankContainer');
+        if (wordBankContainer) {
+            words.forEach(word => {
+                const button = this.createWordBankButton(word);
+                wordBankContainer.appendChild(button);
+            });
+        }
+
+        // Reset response state
+        DOM.setContent('responseContainer', '');
+        DOM.setContent('feedback', '');
+        AppState.prevResponses = [];
+    }
+
     setButtonsDisabled(disabled) {
         const buttonIds = [
-            'submit', 'clear', 'next', 'shuffle', 'back', 'translate',
+            'submit', 'clear', 'next', 'shuffle', 'translate',
             'vocab1', 'vocab2', 'mistakes', 'saveCurrent', 'share'
         ];
         
@@ -27,14 +61,12 @@ export class UIManager {
     showResponseButtons() {
         DOM.setVisible('submit', true);
         DOM.setVisible('clear', true);
-        DOM.setVisible('back', true);
         DOM.setContent('next', 'Skip');
     }
 
     hideResponseButtons() {
         DOM.setVisible('submit', false);
         DOM.setVisible('clear', false);
-        DOM.setVisible('back', false);
         DOM.setContent('next', 'Next');
     }
 
@@ -54,21 +86,56 @@ export class UIManager {
         const button = DOM.createElement('button', {
             textContent: word,
             className: 'word-bank-btn',
-            onClick: () => this.handleWordBankClick(word)
+            onClick: () => { this.handleWordBankClick(word, button); }
         });
         
         return button;
     }
 
-    handleWordBankClick(word) {
-        const responseContainer = DOM.get('responseContainer');
+    createResponseButton(word, bankButton) {
+        const button = DOM.createElement('button', {
+            textContent: word,
+            className: 'response-btn',
+            onClick: () => { this.handleResponseClick(word, button, bankButton); }
+        });
+        
+        return button;
+    }
+
+    handleWordBankClick(word, button) {
+        const responseContainer = DOM.elements.responseContainer;
+        if (!responseContainer) return;
+
+        const responseButton = this.createResponseButton(word, button);
+        responseContainer.appendChild(responseButton);
+
+        button.disabled = true;
+    }
+
+    handleResponseClick(word, button, bankButton) {
+        const responseContainer = DOM.elements.responseContainer;
         if (!responseContainer) return;
         
-        const currentResponse = responseContainer.textContent;
-        AppState.prevResponses.push(currentResponse);
-        
-        const newResponse = currentResponse ? `${currentResponse} ${word}` : word;
-        responseContainer.textContent = newResponse;
+        responseContainer.removeChild(button);
+
+        bankButton.disabled = false;
+    }
+
+    flattenResponse() {
+        const responseContainer = DOM.elements.responseContainer;
+        if (!responseContainer) return;
+        const responseButtons = Array.from(responseContainer.children);
+        const responseWords = responseButtons.map(btn => btn.textContent.trim()).filter(Boolean);
+        const response = responseWords.join(' ');
+        responseContainer.textContent = response; // Update container text
+        return response;
+    }
+
+    clearResponse() {
+        DOM.setContent('responseContainer', '');
+        DOM.elements.wordBankContainer.childNodes.forEach(button => {
+            button.disabled = false;
+        });
     }
 
     showFeedback(isCorrect, feedbackText = '') {
@@ -76,9 +143,11 @@ export class UIManager {
         if (!feedbackElement) return;
         
         if (isCorrect) {
+            this.updateLessonMascot('happy');
             feedbackElement.textContent = 'Correct!';
             feedbackElement.style.color = 'green';
         } else {
+            this.updateLessonMascot('lecture');
             feedbackElement.innerHTML = feedbackText;
             feedbackElement.style.color = '';
         }
@@ -90,6 +159,25 @@ export class UIManager {
         DOM.setEnabled('share', hasConfig);
         DOM.setEnabled('shuffle', hasConfig);
         DOM.setEnabled('mistakes', hasConfig);
+    }
+
+    updateTitle(title) {
+        DOM.setContent('lesson-title', title);
+    }
+
+    updateLessonMascot(state) {
+        switch (state) {
+            case 'happy':
+                DOM.setImage('lesson-mascot', 'images/udo-happy.png');
+                break
+            case 'lecture':
+                DOM.setImage('lesson-mascot', 'images/udo-lecture.png');
+                break;
+            default:
+            case 'normal':
+                DOM.setImage('lesson-mascot', 'images/udo-normal.png');
+                break;
+        }
     }
 
     /**
@@ -284,41 +372,6 @@ export class UIManager {
     showSaveButton(configData) {
         const isValid = configData && configData.exercises && configData.exercises.length > 0;
         DOM.setEnabled('loadSaveConfig', isValid);
-    }
-
-    updateLessonDisplay(exerciseData, progress) {
-        if (!exerciseData) {
-            DOM.setContent('prompt', 'No exercises loaded.');
-            this.setButtonsDisabled(true);
-            return;
-        }
-
-        this.setButtonsDisabled(false);
-        this.showResponseButtons();
-
-        // Display exercise counter and prompt
-        const promptText = `${progress.current}/${progress.total}. Translate this: "${exerciseData.prompt}"`;
-        DOM.setContent('prompt', promptText);
-
-        // Create word bank
-        const words = ArrayUtils.removeDuplicates(
-            [...exerciseData.solutionWords, ...exerciseData.noiseWords]
-        );
-        ArrayUtils.shuffle(words);
-
-        this.clearWordBank();
-        const wordBankContainer = DOM.get('wordBankContainer');
-        if (wordBankContainer) {
-            words.forEach(word => {
-                const button = this.createWordBankButton(word);
-                wordBankContainer.appendChild(button);
-            });
-        }
-
-        // Reset response state
-        DOM.setContent('responseContainer', '');
-        DOM.setContent('feedback', '');
-        AppState.prevResponses = [];
     }
 
     showStorageInfo() {

@@ -25,21 +25,19 @@ export class ExerciseManager {
             return {
                 prompt: exercise.A,
                 solution: exercise.B,
-                noise: exercise.noiseB || this.generateNoise('B', 5, exercise.B),
                 promptLang: languages[0],
                 solutionLang: languages[1],
                 solutionWords: StringUtils.splitSentenceClean(exercise.B),
-                noiseWords: this.parseNoiseWords(exercise.noiseB)
+                noiseWords: this.parseNoiseWords(exercise.noiseB || this.generateNoise('B', 5, exercise.B))
             };
         } else {
             return {
                 prompt: exercise.B,
                 solution: exercise.A,
-                noise: exercise.noiseA || this.generateNoise('A', 5, exercise.A),
                 promptLang: languages[1],
                 solutionLang: languages[0],
                 solutionWords: StringUtils.splitSentenceClean(exercise.A),
-                noiseWords: this.parseNoiseWords(exercise.noiseA)
+                noiseWords: this.parseNoiseWords(exercise.noiseA || this.generateNoise('A', 5, exercise.A))
             };
         }
     }

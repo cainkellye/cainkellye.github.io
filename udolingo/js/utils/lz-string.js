@@ -1,19 +1,16 @@
-// Copyright (c) 2013 Pieroxy <pieroxy@pieroxy.net>
-// This work is free. You can redistribute it and/or modify it
-// under the terms of the WTFPL, Version 2
-// For more information see LICENSE.txt or http://www.wtfpl.net/
-//
-// For more information, the home page:
-// http://pieroxy.net/blog/pages/lz-string/testing.html
-//
-// LZ-based compression algorithm, version 1.4.4
-var LZString144 = (function() {
+/**
+ * LZ-String Compression Library v1.4.4
+ * 
+ * Original work by Pieroxy <pieroxy@pieroxy.net>
+ * This work is free. You can redistribute it and/or modify it
+ * under the terms of the WTFPL, Version 2
+ */
 
 // private property
-var f = String.fromCharCode;
-var keyStrBase64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-var keyStrUriSafe = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$";
-var baseReverseDic = {};
+const f = String.fromCharCode;
+const keyStrBase64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+const keyStrUriSafe = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$";
+const baseReverseDic = {};
 
 function getBaseValue(alphabet, character) {
   if (!baseReverseDic[alphabet]) {
@@ -25,10 +22,10 @@ function getBaseValue(alphabet, character) {
   return baseReverseDic[alphabet][character];
 }
 
-var LZString144 = {
+export const LZString = {
   compressToBase64 : function (input) {
     if (input == null) return "";
-    var res = LZString144._compress(input, 6, function(a){return keyStrBase64.charAt(a);});
+    var res = LZString._compress(input, 6, function(a){return keyStrBase64.charAt(a);});
     switch (res.length % 4) { // To produce valid Base64
     default: // When could this happen ?
     case 0 : return res;
@@ -41,23 +38,23 @@ var LZString144 = {
   decompressFromBase64 : function (input) {
     if (input == null) return "";
     if (input == "") return null;
-    return LZString144._decompress(input.length, 32, function(index) { return getBaseValue(keyStrBase64, input.charAt(index)); });
+    return LZString._decompress(input.length, 32, function(index) { return getBaseValue(keyStrBase64, input.charAt(index)); });
   },
 
   compressToUTF16 : function (input) {
     if (input == null) return "";
-    return LZString144._compress(input, 15, function(a){return f(a+32);}) + " ";
+    return LZString._compress(input, 15, function(a){return f(a+32);}) + " ";
   },
 
   decompressFromUTF16: function (compressed) {
     if (compressed == null) return "";
     if (compressed == "") return null;
-    return LZString144._decompress(compressed.length, 16384, function(index) { return compressed.charCodeAt(index) - 32; });
+    return LZString._decompress(compressed.length, 16384, function(index) { return compressed.charCodeAt(index) - 32; });
   },
 
   //compress into uint8array (UCS-2 big endian format)
   compressToUint8Array: function (uncompressed) {
-    var compressed = LZString144.compress(uncompressed);
+    var compressed = LZString.compress(uncompressed);
     var buf=new Uint8Array(compressed.length*2); // 2 bytes per character
 
     for (var i=0, TotalLen=compressed.length; i<TotalLen; i++) {
@@ -71,7 +68,7 @@ var LZString144 = {
   //decompress from uint8array (UCS-2 big endian format)
   decompressFromUint8Array:function (compressed) {
     if (compressed===null || compressed===undefined){
-        return LZString144.decompress(compressed);
+        return LZString.decompress(compressed);
     } else {
         var buf=new Array(compressed.length/2); // 2 bytes per character
         for (var i=0, TotalLen=buf.length; i<TotalLen; i++) {
@@ -82,17 +79,16 @@ var LZString144 = {
         buf.forEach(function (c) {
           result.push(f(c));
         });
-        return LZString144.decompress(result.join(''));
+        return LZString.decompress(result.join(''));
 
     }
 
   },
 
-
   //compress into a string that is already URI encoded
   compressToEncodedURIComponent: function (input) {
     if (input == null) return "";
-    return LZString144._compress(input, 6, function(a){return keyStrUriSafe.charAt(a);});
+    return LZString._compress(input, 6, function(a){return keyStrUriSafe.charAt(a);});
   },
 
   //decompress from an output of compressToEncodedURIComponent
@@ -100,12 +96,13 @@ var LZString144 = {
     if (input == null) return "";
     if (input == "") return null;
     input = input.replace(/ /g, "+");
-    return LZString144._decompress(input.length, 32, function(index) { return getBaseValue(keyStrUriSafe, input.charAt(index)); });
+    return LZString._decompress(input.length, 32, function(index) { return getBaseValue(keyStrUriSafe, input.charAt(index)); });
   },
 
   compress: function (uncompressed) {
-    return LZString144._compress(uncompressed, 16, function(a){return f(a);});
+    return LZString._compress(uncompressed, 16, function(a){return f(a);});
   },
+  
   _compress: function (uncompressed, bitsPerChar, getCharFromInt) {
     if (uncompressed == null) return "";
     var i, value,
@@ -326,7 +323,7 @@ var LZString144 = {
   decompress: function (compressed) {
     if (compressed == null) return "";
     if (compressed == "") return null;
-    return LZString144._decompress(compressed.length, 32768, function(index) { return compressed.charCodeAt(index); });
+    return LZString._decompress(compressed.length, 32768, function(index) { return compressed.charCodeAt(index); });
   },
 
   _decompress: function (length, resetValue, getNextValue) {
@@ -491,11 +488,3 @@ var LZString144 = {
     }
   }
 };
-  return LZString144;
-})();
-
-if (typeof define === 'function' && define.amd) {
-  define(function () { return LZString144; });
-} else if( typeof module !== 'undefined' && module != null ) {
-  module.exports = LZString144
-}

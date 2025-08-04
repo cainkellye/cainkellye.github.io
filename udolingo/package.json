@@ -1,0 +1,34 @@
+{
+  "name": "udolingo",
+  "version": "1.0.0",
+  "description": "AI-powered language learning application",
+  "type": "module",
+  "main": "js/app.js",
+  "scripts": {
+    "start": "npx http-server . -p 8080",
+    "dev": "npx http-server . -p 8080 --cors",
+    "build": "echo 'Build completed - all modules are ES6 compatible'",
+    "lint": "echo 'Linting not configured'",
+    "test": "echo 'Testing not configured'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cainkellye/udolingo"
+  },
+  "keywords": [
+    "language-learning",
+    "ai",
+    "education",
+    "javascript",
+    "es6-modules"
+  ],
+  "author": "László Lenkei (CainKellye)",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {},
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
+}

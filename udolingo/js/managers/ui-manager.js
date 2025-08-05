@@ -127,8 +127,11 @@ export class UIManager {
         const responseButtons = Array.from(responseContainer.children);
         const responseWords = responseButtons.map(btn => btn.textContent.trim()).filter(Boolean);
         const response = responseWords.join(' ');
-        responseContainer.textContent = response; // Update container text
         return response;
+    }
+
+    swapResponse(response) {
+        DOM.setContent('responseContainer', response);
     }
 
     clearResponse() {

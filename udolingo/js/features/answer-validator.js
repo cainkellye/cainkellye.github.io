@@ -5,10 +5,15 @@
 
 import { AppState } from '../core/state.js';
 import { StringUtils } from '../utils/helpers.js';
+import { UIManager } from '../managers/ui-manager.js';
+import { ExerciseManager } from './exercise-manager.js';
+import { DirectionManager } from './direction-manager.js';
 
 export class AnswerValidator {
     constructor() {
-        // Avoid circular dependency by importing managers on demand
+        this.uiManager = new UIManager();
+        this.exerciseManager = new ExerciseManager();
+        this.directionManager = new DirectionManager();
     }
 
     async validateAnswer(userResponse) {
@@ -31,7 +36,8 @@ export class AnswerValidator {
 
         // Check if answer is correct
         if (userResponse === solution) {
-            await this.showFeedback(true);
+            this.uiManager.swapResponse(exerciseData.solution);
+            this.uiManager.showFeedback(true);
             console.log('Answer correct!');
             return;
         }
@@ -49,7 +55,8 @@ export class AnswerValidator {
 
         // Generate detailed feedback
         const feedbackHtml = this.generateDetailedFeedback(userResponse, solution);
-        await this.showFeedback(false, feedbackHtml);
+        this.uiManager.swapResponse(userResponse);
+        this.uiManager.showFeedback(false, feedbackHtml);
         
         console.log('Answer incorrect');
     }
@@ -61,10 +68,7 @@ export class AnswerValidator {
         }
 
         try {
-            // Import and use ExerciseManager on demand to avoid circular dependency
-            const { ExerciseManager } = await import('./exercise-manager.js');
-            const exerciseManager = new ExerciseManager();
-            const exerciseData = exerciseManager.getCurrentExerciseForValidation();
+            const exerciseData = this.exerciseManager.getCurrentExerciseForValidation();
             
             if (!exerciseData) {
                 console.error('ExerciseManager returned null exercise data');
@@ -92,10 +96,7 @@ export class AnswerValidator {
 
     async getCurrentDirection() {
         try {
-            // Import DirectionManager on demand to avoid circular dependency
-            const { DirectionManager } = await import('./direction-manager.js');
-            const directionManager = new DirectionManager();
-            return directionManager.getCurrentDirection(AppState.currentTaskIndex);
+            return this.directionManager.getCurrentDirection(AppState.currentTaskIndex);
         } catch (error) {
             console.error('Error getting current direction:', error);
             return 'AtoB'; // Default fallback
@@ -104,26 +105,13 @@ export class AnswerValidator {
 
     async clearWordBankAndButtons() {
         try {
-            // Import UIManager on demand
-            const { UIManager } = await import('../managers/ui-manager.js');
-            const uiManager = new UIManager();
-            uiManager.clearWordBank();
-            uiManager.hideResponseButtons();
+            this.uiManager.clearWordBank();
+            this.uiManager.hideResponseButtons();
         } catch (error) {
             console.error('Error clearing word bank and buttons:', error);
         }
     }
 
-    async showFeedback(isCorrect, feedbackText = '') {
-        try {
-            // Import UIManager on demand
-            const { UIManager } = await import('../managers/ui-manager.js');
-            const uiManager = new UIManager();
-            uiManager.showFeedback(isCorrect, feedbackText);
-        } catch (error) {
-            console.error('Error showing feedback:', error);
-        }
-    }
 
     async recordMistake(mistakeData) {
         try {

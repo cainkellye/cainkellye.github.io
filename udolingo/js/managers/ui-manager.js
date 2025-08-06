@@ -103,12 +103,8 @@ export class UIManager {
     }
 
     handleWordBankClick(word, button) {
-        const responseContainer = DOM.elements.responseContainer;
-        if (!responseContainer) return;
-
         const responseButton = this.createResponseButton(word, button);
-        responseContainer.appendChild(responseButton);
-
+        DOM.elements.responseContainer.appendChild(responseButton);
         button.disabled = true;
     }
 

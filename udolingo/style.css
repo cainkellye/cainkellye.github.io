@@ -104,6 +104,15 @@ body {
     height: fit-content;
 }
 
+#lesson-header {
+    display: flex;
+    align-items: center;
+}
+
+#lesson-title {
+    width: 100%;
+}
+
 #lesson-container {
     position: relative;
     cursor: default;
@@ -198,7 +207,8 @@ button:disabled {
 }
 
 .word-bank-btn {
-    background-color: #e7e7e7;
+    background-color: #eaedf5;
+    color: #1342eb;
 }
 
 .word-bank-btn:disabled {
@@ -207,9 +217,13 @@ button:disabled {
 }
 
 .response-btn {
-    background: linear-gradient(165deg, #f2f2f2 10%, #ffffff 100%);
-    box-shadow: 0 2px 3px 1px rgba(0, 0, 0, 0.4);
-    padding: 0.5rem;
+    background: linear-gradient(160deg, #ffffff 10%, #e7ecfb 100%);
+    padding: 0.45rem 0.6rem;
+    color: #000000;
+    border: 1px solid #d7d7d7;
+    transition: transform 0.4s ease;
+    margin-left: 0.15rem;
+    margin-right: 0.15rem;
 }
 
 /* Modal styles */

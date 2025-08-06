@@ -382,8 +382,9 @@ button:disabled {
     width: 95%;
     padding: 0.5rem;
     margin-bottom: 1rem;
-    border: 1px solid #ddd;
+    border: 1px solid #9b9b9b;
     border-radius: 5px;
+    font-size: 14px;
 }
 
 #no-saved-lessons-msg {
@@ -689,7 +690,7 @@ button:disabled {
     }
     
     .modal-content.small-modal {
-        max-width: 400px;
+        max-width: 450px;
         left: unset;
     }
 

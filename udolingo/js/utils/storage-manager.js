@@ -138,6 +138,11 @@ export class StorageManager {
             return {};
         }
     }
+
+    existsSavedLessonWithTitle(title) {
+        const savedLessons = this.getSavedLessons();
+        return Object.values(savedLessons).some(lesson => lesson.title === title);
+    }
     
     /**
      * Set the lessons index (metadata only)
@@ -223,6 +228,7 @@ export class StorageManager {
             }
             
             lessonData.title = newTitle;
+            lessonData.config.title = newTitle;
             const compressed = this.compressData(lessonData);
             if (!compressed) {
                 console.error(`Failed to compress updated lesson data for ${id}`);

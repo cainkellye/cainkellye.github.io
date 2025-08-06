@@ -91,6 +91,7 @@ export class ConfigManager {
         const lesson = this.storageManager.getSavedLesson(lessonId);
         if (lesson) {
             this.loadConfiguration(lesson.config);
+            AppState.lessonId = lessonId;
             this._cleanupAfterLoad();
         } else {
             UIUtils.showError("Lesson not found.");
@@ -107,9 +108,7 @@ export class ConfigManager {
             }
 
             console.log(`Load from clipboard. Config title: ${newConfig.title}`);
-            this.loadConfiguration(newConfig);
-            this.saveCurrentLoadedConfig(true);
-            this._cleanupAfterLoad();
+            this._processSuccessfulLoad(newConfig);
         } catch (error) {
             console.error('Clipboard load failed:', error);
             alert("The clipboard does not contain a valid Udolingo lesson.");
@@ -131,6 +130,7 @@ export class ConfigManager {
     }
 
     _processSuccessfulLoad(newConfig, configInput) {
+        AppState.lessonId = null;
         this.loadConfiguration(newConfig);
         this.saveCurrentLoadedConfig(true);
         
@@ -161,17 +161,33 @@ export class ConfigManager {
                 return;
             }
 
-            const lessonId = this.storageManager.saveLesson(AppState.config);
-            if (lessonId) {
-                this._handleSaveSuccess(lessonId, silent);
+            if (!AppState.lessonId) {
+                const exists = this.storageManager.existsSavedLessonWithTitle(AppState.config.title);
+                if (exists && !silent) {
+                    UIUtils.confirm(`A lesson with the title "${AppState.config.title}" already exists. Do you want to save a duplicate?`, () => {
+                        this._saveConfig(silent);
+                    })
+                } else {
+                    this._saveConfig(silent);
+                }
             } else if (!silent) {
-                alert("Failed to save lesson. Please try again or check if you have enough storage space.");
+                UIUtils.showSuccess(`Current lesson was already saved.`);
             }
         } catch (error) {
             console.error('Error saving current config:', error);
             if (!silent) {
                 alert(`Error saving lesson: ${error.message}`);
             }
+        }
+    }
+
+    _saveConfig(silent = false) {
+        const lessonId = this.storageManager.saveLesson(AppState.config);
+        if (lessonId) {
+            AppState.lessonId = lessonId;
+            this._handleSaveSuccess(lessonId, silent);
+        } else if (!silent) {
+            alert("Failed to save lesson. Please try again or check if you have enough storage space.");
         }
     }
 
@@ -246,6 +262,7 @@ export class ConfigManager {
                 throw new Error("config.json not found.");
             }
             
+            AppState.lessonId = null;
             const config = await response.json();
             this.loadConfiguration(config);
         } catch (error) {

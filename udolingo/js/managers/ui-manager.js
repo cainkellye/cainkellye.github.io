@@ -358,6 +358,10 @@ export class UIManager {
                 const success = this.storageManager.deleteLesson(lessonId);
                 if (success) {
                     this.refreshSavedLessonsList();
+                    //If the deleted lesson was the current one, clear the state to allow saving again
+                    if (AppState.lessonId === lessonId) {
+                        AppState.lessonId = null;
+                    }
                 } else {
                     UIUtils.showError("Failed to delete lesson. Please try again.");
                 }

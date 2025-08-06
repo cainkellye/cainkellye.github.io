@@ -200,6 +200,9 @@ export class EventManager {
                         newTitle
                     );
                     if (success) {
+                        if (AppState.lessonId === AppState.currentRenameId) {
+                            this.uiManager.updateTitle(newTitle);
+                        }
                         this.uiManager.hideRenameModal();
                         this.uiManager.refreshSavedLessonsList();
                     } else {

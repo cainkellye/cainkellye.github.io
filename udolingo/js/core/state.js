@@ -8,6 +8,7 @@ export const AppState = {
     currentTaskIndex: 0,
     exercises: [],
     config: null,
+    lessonId: null,
     
     // User interaction state
     mistakes: [],
@@ -25,12 +26,13 @@ export const AppState = {
         this.currentTaskIndex = 0;
         this.exercises = [];
         this.config = null;
+        this.lessonId = null;
         this.promptLang = '';
         this.solutionLang = '';
         this.exerciseDirections = [];
         this.currentCycle = 0;
         this.currentRenameId = null;
-        // Note: mistakes are preserved across lesson changes
+        this.mistakes = [];
     },
     
     updateConfig(config) {
@@ -38,7 +40,7 @@ export const AppState = {
         this.config = config;
         this.exercises = config.exercises || [];
     },
-    
+
     clearMistakes() {
         this.mistakes = [];
     },

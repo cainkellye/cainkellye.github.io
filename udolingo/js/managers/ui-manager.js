@@ -82,8 +82,8 @@ export class UIManager {
     }
 
     initializeVocabularyBox() {
-        const vocabContent = DOM.get('vocabBoxContent');
-        const vocabToggle = DOM.get('vocabToggle');
+        const vocabContent = DOM.elements.vocabBoxContent;
+        const vocabToggle = DOM.elements.vocabToggle;
         
         if (vocabContent && vocabToggle) {
             vocabContent.style.display = 'none';
@@ -92,8 +92,8 @@ export class UIManager {
     }
 
     toggleVocabularyBox() {
-        const vocabContent = DOM.get('vocabBoxContent');
-        const vocabToggle = DOM.get('vocabToggle');
+        const vocabContent = DOM.elements.vocabBoxContent;
+        const vocabToggle = DOM.elements.vocabToggle;
         
         if (!vocabContent || !vocabToggle) return;
 

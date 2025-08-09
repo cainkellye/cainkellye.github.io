@@ -25,6 +25,15 @@ export class DebugUtils {
                 }
             },
 
+            clearAllVocab: () => {
+                if (confirm('Are you sure you want to delete ALL saved vocabulary? This cannot be undone.')) {
+                    const success = StorageManager.clearVocabulary();
+                    if (success) {
+                        console.log('All vocabulary cleared');
+                    }
+                }
+            },
+
             showStorageInfo: () => {
                 const info = StorageManager.getStorageInfo();
                 console.table(info);
@@ -176,6 +185,7 @@ Data & Storage:
   - showStorageInfo()     Show storage usage statistics
   - getSavedLessons()     List all saved lessons
   - clearAllLessons()     Delete all saved lessons (with confirmation)
+  - clearAllVocab()       Delete all saved vocabulary (with confirmation)
   - exportData()          Export all data to JSON file
 
 URLs & Sharing:

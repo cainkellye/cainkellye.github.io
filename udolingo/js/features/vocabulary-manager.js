@@ -183,7 +183,7 @@ export class VocabularyManager {
 
     updateVocabularyBox() {
         const vocabularyEntries = this.extractVocabularyEntriesFromPrompt();
-        const vocabContainer = DOM.get('vocabContainer');
+        const vocabContainer = DOM.elements.vocabContainer;
         
         if (!vocabContainer || vocabularyEntries.length === 0) {
             if (vocabContainer) {
@@ -260,7 +260,7 @@ export class VocabularyManager {
 
     parseAndLoadVocabulary(text) {
         const lines = text.split('\n').filter(line => line.trim());
-        const vocabContainer = DOM.get('vocabContainer');
+        const vocabContainer = DOM.elements.vocabContainer;
         
         if (!vocabContainer) return;
 

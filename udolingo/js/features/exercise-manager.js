@@ -93,10 +93,10 @@ export class ExerciseManager {
     }
 
     showNoExercisesMessage() {
-        const prompt = document.getElementById('prompt');
-        const responseContainer = document.getElementById('response-container');
-        const wordBankContainer = document.getElementById('word-bank-container');
-        const feedback = document.getElementById('feedback');
+        const prompt = document.elements.prompt;
+        const responseContainer = document.elements.responseContainer;
+        const wordBankContainer = document.elements.wordBankContainer;
+        const feedback = document.elements.feedback;
 
         if (prompt) prompt.textContent = "No exercises loaded.";
         if (responseContainer) responseContainer.textContent = "";

@@ -137,7 +137,7 @@ export class EventManager {
     setupVocabularyEvents() {
         // Toggle vocabulary box
         DOM.addEventListener('vocabBoxHeader', 'click', () => {
-            this.vocabularyManager.toggleVocabularyBox();
+            this.uiManager.toggleVocabularyBox();
         });
 
         // Load vocabulary from clipboard
@@ -224,7 +224,7 @@ export class EventManager {
             if (renameInput && AppState.currentRenameId) {
                 const newTitle = renameInput.value.trim();
                 if (newTitle) {
-                    const success = this.configManager.storageManager.renameLesson(
+                    const success = this.configManager.renameLesson(
                         AppState.currentRenameId, 
                         newTitle
                     );

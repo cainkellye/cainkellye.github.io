@@ -14,7 +14,6 @@ import { UIManager } from './ui-manager.js';
 
 export class ConfigManager {
     constructor() {
-        this.storageManager = new StorageManager();
         this.urlHandler = new URLHandler();
         this.uiManager = new UIManager();
     }
@@ -88,7 +87,7 @@ export class ConfigManager {
     }
 
     loadSavedLesson(lessonId) {
-        const lesson = this.storageManager.getSavedLesson(lessonId);
+        const lesson = StorageManager.getSavedLesson(lessonId);
         if (lesson) {
             this.loadConfiguration(lesson.config);
             AppState.lessonId = lessonId;
@@ -113,6 +112,10 @@ export class ConfigManager {
             console.error('Clipboard load failed:', error);
             alert("The clipboard does not contain a valid Udolingo lesson.");
         }
+    }
+
+    renameLesson(id, newTitle) {
+        return StorageManager.renameLesson(id, newTitle);
     }
 
     _generateVocabulary(configData, lang) {
@@ -156,13 +159,13 @@ export class ConfigManager {
 
         try {
             // Check storage health before saving
-            if (!silent && !this.storageManager.checkStorageHealth()) {
+            if (!silent && !StorageManager.checkStorageHealth()) {
                 alert("Storage appears to be having issues. Please try again or check your browser settings.");
                 return;
             }
 
             if (!AppState.lessonId) {
-                const exists = this.storageManager.existsSavedLessonWithTitle(AppState.config.title);
+                const exists = StorageManager.existsSavedLessonWithTitle(AppState.config.title);
                 if (exists && !silent) {
                     UIUtils.confirm(`A lesson with the title "${AppState.config.title}" already exists. Do you want to save a duplicate?`, () => {
                         this._saveConfig(silent);
@@ -182,7 +185,7 @@ export class ConfigManager {
     }
 
     _saveConfig(silent = false) {
-        const lessonId = this.storageManager.saveLesson(AppState.config);
+        const lessonId = StorageManager.saveLesson(AppState.config);
         if (lessonId) {
             AppState.lessonId = lessonId;
             this._handleSaveSuccess(lessonId, silent);

@@ -149,7 +149,6 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 0.5rem 0;
-    border-bottom: 1px solid #ddd;
     cursor: pointer;
     transition: background-color 0.2s ease;
 }
@@ -167,7 +166,12 @@ body {
 #vocab-toggle {
     font-size: 0.8rem;
     color: #666;
-    transition: transform 0.2s ease;
+    transition: transform 0.3s ease;
+    transform: rotate(-90deg);
+}
+
+#vocab-toggle.rotated {
+    transform: rotate(0deg);
 }
 
 #vocab-box-content {
@@ -757,7 +761,6 @@ button:disabled {
     .main-content {
         padding: 1rem;
         overflow-y: visible;
-        align-items: flex-start;
     }
 
     .modal-content {

@@ -5,12 +5,14 @@
 
 import { AppState } from '../core/state.js';
 import { DirectionManager } from './direction-manager.js';
+import { VocabularyManager } from './vocabulary-manager.js';
 import { UIManager } from '../managers/ui-manager.js';
 import { ArrayUtils, StringUtils } from '../utils/helpers.js';
 
 export class ExerciseManager {
     constructor() {
         this.directionManager = new DirectionManager();
+        this.vocabularyManager = new VocabularyManager();
         this.uiManager = new UIManager();
     }
 
@@ -85,19 +87,9 @@ export class ExerciseManager {
         this.uiManager.updateLessonDisplay(exerciseData, progress);
 
         // Update vocabulary box when exercise loads
-        this.updateVocabularyBox();
+        this.vocabularyManager.updateVocabularyBox();
 
         console.log(`Loaded exercise ${progress.current}/${progress.total} (${currentDirection})`);
-    }
-
-    updateVocabularyBox() {
-        // Dynamically import VocabularyManager to avoid circular dependencies
-        import('./vocabulary-manager.js').then(({ VocabularyManager }) => {
-            const vocabularyManager = new VocabularyManager();
-            vocabularyManager.updateVocabularyBox();
-        }).catch(error => {
-            console.error('Error loading VocabularyManager:', error);
-        });
     }
 
     showNoExercisesMessage() {

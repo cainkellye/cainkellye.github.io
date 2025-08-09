@@ -10,7 +10,6 @@ import { StorageManager } from '../utils/storage-manager.js';
 
 export class UIManager {
     constructor() {
-        this.storageManager = new StorageManager();
     }
 
     updateLessonDisplay(exerciseData, progress) {
@@ -80,6 +79,33 @@ export class UIManager {
         DOM.setHTML('vocab2', `${langAB[1]} → ${langAB[0]} 📖`);
         DOM.setVisible('vocab1', true);
         DOM.setVisible('vocab2', true);
+    }
+
+    initializeVocabularyBox() {
+        const vocabContent = DOM.get('vocabBoxContent');
+        const vocabToggle = DOM.get('vocabToggle');
+        
+        if (vocabContent && vocabToggle) {
+            vocabContent.style.display = 'none';
+            vocabToggle.classList.remove('rotated');
+        }
+    }
+
+    toggleVocabularyBox() {
+        const vocabContent = DOM.get('vocabBoxContent');
+        const vocabToggle = DOM.get('vocabToggle');
+        
+        if (!vocabContent || !vocabToggle) return;
+
+        const isCollapsed = vocabContent.style.display === 'none';
+        
+        vocabContent.style.display = isCollapsed ? 'block' : 'none';
+
+        if (isCollapsed) {
+            vocabToggle.classList.add('rotated');
+        } else {
+            vocabToggle.classList.remove('rotated');
+        }
     }
 
     createWordBankButton(word) {
@@ -235,7 +261,7 @@ export class UIManager {
     }
 
     refreshSavedLessonsList() {
-        const savedLessons = this.storageManager.getSavedLessons();
+        const savedLessons = StorageManager.getSavedLessons();
         const lessonIds = Object.keys(savedLessons);
         
         DOM.clear('savedLessonsList');
@@ -349,13 +375,13 @@ export class UIManager {
     }
 
     deleteSavedLesson(lessonId) {
-        const lesson = this.storageManager.getSavedLesson(lessonId);
+        const lesson = StorageManager.getSavedLesson(lessonId);
         if (!lesson) return;
 
         UIUtils.confirm(
             `Are you sure you want to delete "${lesson.title}"?`,
             () => {
-                const success = this.storageManager.deleteLesson(lessonId);
+                const success = StorageManager.deleteLesson(lessonId);
                 if (success) {
                     this.refreshSavedLessonsList();
                     //If the deleted lesson was the current one, clear the state to allow saving again
@@ -375,19 +401,6 @@ export class UIManager {
     showSaveButton(configData) {
         const isValid = configData && configData.exercises && configData.exercises.length > 0;
         DOM.setEnabled('loadSaveConfig', isValid);
-    }
-
-    showStorageInfo() {
-        const info = this.storageManager.getStorageInfo();
-        const message = `Storage Info:
-        
-Available: ${info.isAvailable ? 'Yes' : 'No'}
-Saved Lessons: ${info.lessonCount}
-Udolingo Storage: ${info.formattedSize}
-Total localStorage: ${info.formattedTotalSize}
-Estimated Quota: ${info.estimatedQuota}`;
-        
-        alert(message);
     }
 
     updateUI() {

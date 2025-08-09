@@ -10,27 +10,90 @@ import { StorageManager } from '../utils/storage-manager.js';
 
 export class VocabularyManager {
     constructor() {
-        this.storageManager = new StorageManager();
         this.centralVocab = this.loadCentralVocabulary();
     }
 
-    /**
-     * Load central vocabulary from storage
-     */
     loadCentralVocabulary() {
-        return this.storageManager.getCentralVocabulary() || {};
+        let vocab = StorageManager.getCentralVocabulary() || {};
+        return vocab;
     }
 
-    /**
-     * Save central vocabulary to storage
-     */
     saveCentralVocabulary() {
-        this.storageManager.setCentralVocabulary(this.centralVocab);
+        StorageManager.setCentralVocabulary(this.centralVocab);
     }
 
-    /**
-     * Extract words from the current exercise prompt
-     */
+    getLanguagePairKey() {
+        // Create consistent key regardless of lesson order (alphabetical)
+        return this.getLanguageOrder().join('-').toLowerCase();
+    }
+
+    getCurrentLanguagePairVocab() {
+        const pairKey = this.getLanguagePairKey();
+        if (!this.centralVocab[pairKey]) {
+            this.centralVocab[pairKey] = [];
+        }
+        return this.centralVocab[pairKey];
+    }
+
+    getLanguageOrder() {
+        return AppState.config['langA-B'].sort();
+    }
+
+    lookupTranslation(word, currentLang) {
+        const pairVocab = this.getCurrentLanguagePairVocab();
+        const normalizedWord = word.toLowerCase();
+        const [primaryLang, secondaryLang] = this.getLanguageOrder();
+        
+        // Search through the vocabulary array
+        for (const pair of pairVocab) {
+            if (!Array.isArray(pair) || pair.length !== 2) continue;
+            
+            const [primaryWord, secondaryWord] = pair;
+            
+            // Check if current word matches either position
+            if (currentLang === primaryLang && primaryWord.toLowerCase() === normalizedWord) {
+                return secondaryWord;
+            } else if (currentLang === secondaryLang && secondaryWord.toLowerCase() === normalizedWord) {
+                return primaryWord;
+            }
+        }
+        
+        return '';
+    }
+
+    saveVocabularyPair(sourceWord, sourceLang, targetWord, targetLang) {
+        const pairVocab = this.getCurrentLanguagePairVocab();
+        const [primaryLang, secondaryLang] = this.getLanguageOrder();
+        
+        // Determine correct order based on language alphabetical order
+        let primaryWord, secondaryWord;
+        if (sourceLang === primaryLang) {
+            primaryWord = sourceWord;
+            secondaryWord = targetWord;
+        } else {
+            primaryWord = targetWord;
+            secondaryWord = sourceWord;
+        }
+        
+        // Check if this pair already exists (avoid duplicates)
+        const normalizedPrimary = primaryWord.toLowerCase();
+        const normalizedSecondary = secondaryWord.toLowerCase();
+        
+        const existingIndex = pairVocab.findIndex(pair => 
+            Array.isArray(pair) && pair.length === 2 &&
+            pair[0].toLowerCase() === normalizedPrimary &&
+            pair[1].toLowerCase() === normalizedSecondary
+        );
+        
+        if (existingIndex === -1) {
+            // Add new pair
+            pairVocab.push([primaryWord, secondaryWord]);
+        } else {
+            // Update existing pair (in case of capitalization changes)
+            pairVocab[existingIndex] = [primaryWord, secondaryWord];
+        }
+    }
+
     extractWordsFromPrompt() {
         const currentExercise = AppState.getCurrentExercise();
         if (!currentExercise || !AppState.config) return [];
@@ -40,33 +103,13 @@ export class VocabularyManager {
         
         if (!prompt) return [];
 
-        // Extract meaningful words (filter out common short words, punctuation)
-        const words = prompt.split(/[\s.,;:!?()[\]{}""'']+/)
-            .map(word => word.trim().toLowerCase())
-            .filter(word => word.length >= 2 && !this.isCommonWord(word))
-            .filter((word, index, arr) => arr.indexOf(word) === index); // Remove duplicates
+        const words = ArrayUtils.removeDuplicates(StringUtils.splitSentenceClean(prompt))
+            .map(word => word.toLowerCase())
+            .filter(word => word.length >= 3)
 
         return words;
     }
 
-    /**
-     * Check if a word is a common word that should be filtered out
-     */
-    isCommonWord(word) {
-        const commonWords = [
-            // English
-            'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'i', 'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at', 'this', 'but', 'his', 'by', 'from', 'they', 'we', 'say', 'her', 'she', 'or', 'an', 'will', 'my', 'one', 'all', 'would', 'there', 'their', 'what', 'so', 'up', 'out', 'if', 'about', 'who', 'get', 'which', 'go', 'me', 'when', 'make', 'can', 'like', 'time', 'no', 'just', 'him', 'know', 'take', 'people', 'into', 'year', 'your', 'good', 'some', 'could', 'them', 'see', 'other', 'than', 'then', 'now', 'look', 'only', 'come', 'its', 'over', 'think', 'also', 'back', 'after', 'use', 'two', 'how', 'our', 'work', 'first', 'well', 'way', 'even', 'new', 'want', 'because', 'any', 'these', 'give', 'day', 'most', 'us',
-            // Spanish
-            'el', 'la', 'de', 'que', 'y', 'a', 'en', 'un', 'ser', 'se', 'no', 'te', 'lo', 'le', 'da', 'su', 'por', 'son', 'con', 'para', 'al', 'me', 'una', 'todo', 'pero', 'más', 'hacer', 'o', 'poder', 'decir', 'este', 'ir', 'otro', 'ese', 'la', 'si', 'ya', 'estar', 'todo', 'le', 'bien', 'puede', 'tú',
-            // French  
-            'le', 'de', 'et', 'à', 'un', 'il', 'être', 'et', 'en', 'avoir', 'que', 'pour', 'dans', 'ce', 'son', 'une', 'sur', 'avec', 'ne', 'se', 'pas', 'tout', 'plus', 'par', 'grand', 'en', 'me', 'bien', 'te', 'si', 'dans'
-        ];
-        return commonWords.includes(word);
-    }
-
-    /**
-     * Update vocabulary box with words from current prompt
-     */
     updateVocabularyBox() {
         const wordsFromPrompt = this.extractWordsFromPrompt();
         const vocabContainer = DOM.get('vocabContainer');
@@ -99,9 +142,6 @@ export class VocabularyManager {
         DOM.setEnabled('verifyWordsBtn', wordsFromPrompt.length > 0);
     }
 
-    /**
-     * Create a vocabulary row (word + translation input)
-     */
     createVocabularyRow(word, index) {
         const row = DOM.createElement('div', {
             className: 'vocab-row'
@@ -117,7 +157,7 @@ export class VocabularyManager {
         });
 
         // Translation (editable, with lookup from central vocab)
-        const existingTranslation = this.centralVocab[word] || '';
+        const existingTranslation = this.lookupTranslation(word, AppState.promptLang);
         const translationInput = DOM.createElement('input', {
             type: 'text',
             className: 'vocab-translation-input',
@@ -132,12 +172,9 @@ export class VocabularyManager {
         return row;
     }
 
-    /**
-     * Load vocabulary from clipboard (expects word pairs)
-     */
     async loadVocabularyFromClipboard() {
         try {
-            const clipboardText = await ClipboardUtils.read();
+            const clipboardText = await ClipboardUtils.readText();
             if (!clipboardText) {
                 alert('No text found in clipboard.');
                 return;
@@ -150,9 +187,6 @@ export class VocabularyManager {
         }
     }
 
-    /**
-     * Parse vocabulary text and update the vocabulary box
-     */
     parseAndLoadVocabulary(text) {
         const lines = text.split('\n').filter(line => line.trim());
         const vocabContainer = DOM.get('vocabContainer');
@@ -200,9 +234,6 @@ export class VocabularyManager {
         DOM.setEnabled('saveWordsBtn', true);
     }
 
-    /**
-     * Create vocabulary row from provided data
-     */
     createVocabularyRowFromData(source, translation, index) {
         const row = DOM.createElement('div', {
             className: 'vocab-row'
@@ -215,6 +246,11 @@ export class VocabularyManager {
             placeholder: 'Word/phrase...',
             'data-index': index
         });
+
+        // Look up existing translation if not provided
+        if (!translation && AppState.promptLang) {
+            translation = this.lookupTranslation(source, AppState.promptLang);
+        }
 
         const translationInput = DOM.createElement('input', {
             type: 'text',
@@ -230,64 +266,39 @@ export class VocabularyManager {
         return row;
     }
 
-    /**
-     * Save current vocabulary to central vocabulary
-     */
     saveVocabulary() {
         const sourceInputs = document.querySelectorAll('.vocab-source-input');
         const translationInputs = document.querySelectorAll('.vocab-translation-input');
         
+        if (!AppState.config || !AppState.config['langA-B']) {
+            alert('No language configuration available.');
+            return;
+        }
+
+        const [langA, langB] = AppState.config['langA-B'];
+        const sourceLang = AppState.promptLang;
+        const targetLang = sourceLang === langA ? langB : langA;
+        
         let savedCount = 0;
 
         sourceInputs.forEach((sourceInput, index) => {
-            const source = sourceInput.value.trim().toLowerCase();
+            const source = sourceInput.value.trim();
             const translation = translationInputs[index]?.value.trim();
             
             if (source && translation) {
-                this.centralVocab[source] = translation;
+                this.saveVocabularyPair(source, sourceLang, translation, targetLang);
                 savedCount++;
             }
         });
 
         if (savedCount > 0) {
             this.saveCentralVocabulary();
-            alert(`Saved ${savedCount} vocabulary entries to your central vocabulary.`);
+            alert(`Saved ${savedCount} vocabulary pairs (${sourceLang} ↔ ${targetLang}) to your central vocabulary.`);
         } else {
             alert('No valid word-translation pairs found to save.');
         }
     }
 
-    /**
-     * Toggle vocabulary box visibility
-     */
-    toggleVocabularyBox() {
-        const vocabContent = DOM.get('vocabBoxContent');
-        const vocabToggle = DOM.get('vocabToggle');
-        
-        if (!vocabContent || !vocabToggle) return;
-
-        const isCollapsed = vocabContent.style.display === 'none';
-        
-        vocabContent.style.display = isCollapsed ? 'block' : 'none';
-        vocabToggle.textContent = isCollapsed ? '▲' : '▼';
-    }
-
-    /**
-     * Initialize vocabulary box as collapsed
-     */
-    initializeVocabularyBox() {
-        const vocabContent = DOM.get('vocabBoxContent');
-        const vocabToggle = DOM.get('vocabToggle');
-        
-        if (vocabContent && vocabToggle) {
-            vocabContent.style.display = 'none';
-            vocabToggle.textContent = '▼';
-        }
-    }
-
-    /**
-     * Generate prompt for LLM to verify/improve vocabulary
-     */
     generateVerificationPrompt() {
         const sourceInputs = document.querySelectorAll('.vocab-source-input');
         const translationInputs = document.querySelectorAll('.vocab-translation-input');
@@ -315,30 +326,19 @@ export class VocabularyManager {
         const sourceLang = AppState.promptLang === languages[0] ? languages[0] : languages[1];
         const targetLang = AppState.promptLang === languages[0] ? languages[1] : languages[0];
 
-        const prompt = `Please verify and improve these ${sourceLang} to ${targetLang} vocabulary translations:
+        const currentExercise = AppState.getCurrentExercise();
+        const promptKey = AppState.promptLang === languages[0] ? 'A' : 'B';
+        const currentPrompt = currentExercise[promptKey];
 
-${wordPairs.map((pair, index) => `${index + 1}. ${pair.source} → ${pair.translation}`).join('\n')}
+        const prompt = `Please verify these ${sourceLang} to ${targetLang} vocabulary translations in the context of "${currentPrompt}":
 
-For each word/phrase:
-- Verify the translation is accurate
-- Suggest better translations if needed
-- Add context notes if the word has multiple meanings
-- Format as: "word → translation (notes if any)"
+${wordPairs.map((pair, index) => `${pair.source} → ${pair.translation}`).join('\n')}
 
-Please provide the corrected vocabulary list.`;
+Output only the correct vocabulary list, formatted as "word → translation" or "word → translation1, translation2, ..." if necessary. Each on a separete line.`;
 
-        ClipboardUtils.write(prompt).then(() => {
-            alert('Vocabulary verification prompt copied to clipboard! Paste it into your AI assistant.');
-        }).catch(error => {
-            console.error('Error copying to clipboard:', error);
-            // Fallback: show prompt in modal or alert
-            alert('Copy this prompt to your AI assistant:\n\n' + prompt);
-        });
+        ClipboardUtils.copyText(prompt, 'Vocabulary verification prompt copied to clipboard! Paste it into your AI assistant.');
     }
 
-    /**
-     * Open vocabulary in Google Translate
-     */
     openVocabularyTranslation(sourceLang, targetLang) {
         if (!AppState.config || !AppState.config['langA-B']) {
             console.error('No language configuration available');

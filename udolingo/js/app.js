@@ -27,11 +27,9 @@ class UdolingoApp {
             ui: new UIManager(),
             sidebar: new SidebarManager(),
             config: new ConfigManager(),
-            events: new EventManager(),
-            vocabulary: new VocabularyManager()
+            events: new EventManager()
         };
         this.urlHandler = new URLHandler();
-        this.storageManager = new StorageManager();
         this.llmGenerator = new LLMPromptGenerator();
     }
 
@@ -45,7 +43,7 @@ class UdolingoApp {
             this.llmGenerator.init();
             
             // Initialize vocabulary box as collapsed
-            this.managers.vocabulary.initializeVocabularyBox();
+            this.managers.ui.initializeVocabularyBox();
             
             // Setup debug utilities
             DebugUtils.setupGlobalDebugFunctions();
@@ -64,7 +62,7 @@ class UdolingoApp {
     }
 
     displayStorageInfo() {
-        const storageInfo = this.storageManager.getStorageInfo();
+        const storageInfo = StorageManager.getStorageInfo();
         console.log('Storage info on startup:', storageInfo);
         
         if (!storageInfo.isAvailable) {
@@ -72,7 +70,7 @@ class UdolingoApp {
         }
 
         if (storageInfo.vocabCount > 0) {
-            console.log(`Central vocabulary contains ${storageInfo.vocabCount} entries`);
+            console.log(`Central vocabulary contains ${storageInfo.vocabCount} entries across ${storageInfo.languagePairs} language pairs`);
         }
     }
 
@@ -102,7 +100,7 @@ class UdolingoApp {
     }
 
     getLatestSavedLesson() {
-        const savedLessons = this.storageManager.getSavedLessons();
+        const savedLessons = StorageManager.getSavedLessons();
         const lessonIds = Object.keys(savedLessons);
         
         if (lessonIds.length === 0) {

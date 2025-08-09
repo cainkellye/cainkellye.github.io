@@ -89,8 +89,11 @@ body {
     flex: 1;
     overflow-y: auto;
     display: flex;
+    flex-direction: column;
     justify-content: center;
+    align-items: center;
     padding: 12vh 2rem;
+    gap: 2rem;
 }
 
 .container {
@@ -138,6 +141,86 @@ body {
     justify-content: center;
     gap: 0.3rem;
     margin-bottom: 0.8rem;
+}
+
+/* Vocabulary Box Styles */
+#vocab-box-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+#vocab-box-header:hover {
+    background-color: #f9f9f9;
+}
+
+#vocab-box-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #333;
+}
+
+#vocab-toggle {
+    font-size: 0.8rem;
+    color: #666;
+    transition: transform 0.2s ease;
+}
+
+#vocab-box-content {
+    margin-top: 1rem;
+    transition: opacity 0.3s ease, max-height 0.3s ease;
+}
+
+.vocab-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    padding: 0.75rem;
+    background-color: #fafafa;
+}
+
+.vocab-row {
+    display: contents;
+}
+
+.vocab-source-input,
+.vocab-translation-input {
+    padding: 0.4rem;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease;
+    background-color: white;
+}
+
+.vocab-source-input:focus,
+.vocab-translation-input:focus {
+    outline: none;
+    border-color: #008CBA;
+    box-shadow: 0 0 3px rgba(0, 140, 186, 0.3);
+}
+
+.vocab-source-input {
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.vocab-translation-input {
+    color: #555;
+}
+
+.vocab-translation-input:empty,
+.vocab-translation-input[value=""] {
+    background-color: #fff9c4;
 }
 
 button {
@@ -284,7 +367,7 @@ button:disabled {
 .modal-buttons button {
     background: linear-gradient(135deg, #667eea 0%, #455799 100%);
     color: white;
-    border-radius: 8px;
+    border-radius: 6px;
     transition: all 0.3s ease;
 }
 
@@ -715,5 +798,17 @@ button:disabled {
         flex: 1;
         min-width: 140px;
         max-width: fit-content;
+    }
+
+    /* Mobile vocabulary styles */
+    .vocab-grid {
+        grid-template-columns: 1fr;
+        gap: 0.3rem;
+    }
+    
+    .vocab-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.3rem;
     }
 }

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Event Manager
  * Centralized event handling for the application
  */
@@ -37,6 +37,7 @@ export class EventManager {
         this.setupResponseManagementEvents();
         this.setupNavigationEvents();
         this.setupTranslationEvents();
+        this.setupVocabularyEvents();
         this.setupConfigPanelEvents();
         this.setupTabSwitchingEvents();
         this.setupRenameModalEvents();
@@ -89,6 +90,8 @@ export class EventManager {
             }
 
             this.exerciseManager.loadExercise(AppState.currentTaskIndex);
+            // Update vocabulary box with new exercise words
+            this.vocabularyManager.updateVocabularyBox();
         });
 
         DOM.addEventListener('shuffle', 'click', () => {
@@ -99,6 +102,7 @@ export class EventManager {
                 this.directionManager.shuffleDirections();
                 AppState.currentTaskIndex = 0;
                 this.exerciseManager.loadExercise(AppState.currentTaskIndex);
+                this.vocabularyManager.updateVocabularyBox();
                 AppState.clearMistakes();
             }
         });
@@ -124,6 +128,31 @@ export class EventManager {
                 const [langA, langB] = AppState.config['langA-B'];
                 this.vocabularyManager.openVocabularyTranslation(langB, langA);
             }
+        });
+    }
+
+    /**
+     * Vocabulary box events
+     */
+    setupVocabularyEvents() {
+        // Toggle vocabulary box
+        DOM.addEventListener('vocabBoxHeader', 'click', () => {
+            this.vocabularyManager.toggleVocabularyBox();
+        });
+
+        // Load vocabulary from clipboard
+        DOM.addEventListener('wordsFromClipboardBtn', 'click', () => {
+            this.vocabularyManager.loadVocabularyFromClipboard();
+        });
+
+        // Save vocabulary
+        DOM.addEventListener('saveWordsBtn', 'click', () => {
+            this.vocabularyManager.saveVocabulary();
+        });
+
+        // Verify vocabulary with LLM
+        DOM.addEventListener('verifyWordsBtn', 'click', () => {
+            this.vocabularyManager.generateVerificationPrompt();
         });
     }
 

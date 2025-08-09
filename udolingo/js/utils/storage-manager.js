@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Storage Manager
  * Handles localStorage operations with compression and error handling
  */
@@ -11,6 +11,84 @@ export class StorageManager {
         this.prefix = 'udolingo_';
         this.lessonPrefix = `${this.prefix}lesson_`;
         this.indexKey = `${this.prefix}lessons_index`;
+        this.vocabKey = `${this.prefix}central_vocabulary`;
+    }
+
+    /**
+     * Get central vocabulary from storage
+     */
+    getCentralVocabulary() {
+        try {
+            const vocabData = this.getItem(this.vocabKey);
+            if (!vocabData) {
+                console.log("No central vocabulary found");
+                return {};
+            }
+            
+            console.log("Central vocabulary loaded:", Object.keys(vocabData).length, "entries");
+            return vocabData;
+        } catch (error) {
+            console.error('Error getting central vocabulary:', error);
+            return {};
+        }
+    }
+
+    /**
+     * Save central vocabulary to storage
+     */
+    setCentralVocabulary(vocabulary) {
+        try {
+            const success = this.setItem(this.vocabKey, vocabulary);
+            if (success) {
+                console.log("Central vocabulary saved:", Object.keys(vocabulary).length, "entries");
+            }
+            return success;
+        } catch (error) {
+            console.error('Error saving central vocabulary:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Add word to central vocabulary
+     */
+    addToVocabulary(word, translation) {
+        try {
+            const vocab = this.getCentralVocabulary();
+            vocab[word.toLowerCase()] = translation;
+            return this.setCentralVocabulary(vocab);
+        } catch (error) {
+            console.error('Error adding to vocabulary:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Remove word from central vocabulary
+     */
+    removeFromVocabulary(word) {
+        try {
+            const vocab = this.getCentralVocabulary();
+            delete vocab[word.toLowerCase()];
+            return this.setCentralVocabulary(vocab);
+        } catch (error) {
+            console.error('Error removing from vocabulary:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Clear all central vocabulary
+     */
+    clearVocabulary() {
+        try {
+            this.removeItem(this.vocabKey);
+            console.log('Central vocabulary cleared');
+            return true;
+        } catch (error) {
+            console.error('Error clearing vocabulary:', error);
+            return false;
+        }
     }
 
     /**
@@ -396,6 +474,10 @@ export class StorageManager {
                 }
             });
             
+            // Add vocabulary size
+            const vocabData = this.getCentralVocabulary();
+            totalSize += JSON.stringify(vocabData).length;
+            
             // Estimate total localStorage usage
             let totalLocalStorageSize = 0;
             for (let key in localStorage) {
@@ -407,6 +489,7 @@ export class StorageManager {
             return {
                 isAvailable: typeof(Storage) !== "undefined",
                 lessonCount: lessonCount,
+                vocabCount: Object.keys(vocabData).length,
                 udolingoStorageSize: totalSize,
                 totalLocalStorageSize: totalLocalStorageSize,
                 formattedSize: StringUtils.formatBytes(totalSize),
@@ -418,6 +501,7 @@ export class StorageManager {
             return {
                 isAvailable: false,
                 lessonCount: 0,
+                vocabCount: 0,
                 udolingoStorageSize: 0,
                 totalLocalStorageSize: 0,
                 formattedSize: '0 bytes',

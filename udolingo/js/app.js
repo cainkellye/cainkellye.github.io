@@ -11,6 +11,7 @@ import { UIManager } from './managers/ui-manager.js';
 import { SidebarManager } from './managers/sidebar-manager.js';
 import { ConfigManager } from './managers/config-manager.js';
 import { EventManager } from './managers/event-manager.js';
+import { VocabularyManager } from './features/vocabulary-manager.js';
 import { URLHandler } from './utils/url-handler.js';
 import { StorageManager } from './utils/storage-manager.js';
 import { LLMPromptGenerator } from './features/llm-prompt-generator.js';
@@ -26,7 +27,8 @@ class UdolingoApp {
             ui: new UIManager(),
             sidebar: new SidebarManager(),
             config: new ConfigManager(),
-            events: new EventManager()
+            events: new EventManager(),
+            vocabulary: new VocabularyManager()
         };
         this.urlHandler = new URLHandler();
         this.storageManager = new StorageManager();
@@ -41,6 +43,9 @@ class UdolingoApp {
             this.managers.sidebar.init();
             this.managers.events.init();
             this.llmGenerator.init();
+            
+            // Initialize vocabulary box as collapsed
+            this.managers.vocabulary.initializeVocabularyBox();
             
             // Setup debug utilities
             DebugUtils.setupGlobalDebugFunctions();
@@ -64,6 +69,10 @@ class UdolingoApp {
         
         if (!storageInfo.isAvailable) {
             console.warn('localStorage is not available');
+        }
+
+        if (storageInfo.vocabCount > 0) {
+            console.log(`Central vocabulary contains ${storageInfo.vocabCount} entries`);
         }
     }
 

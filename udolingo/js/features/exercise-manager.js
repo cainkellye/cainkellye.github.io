@@ -84,7 +84,20 @@ export class ExerciseManager {
         const progress = AppState.getProgress();
         this.uiManager.updateLessonDisplay(exerciseData, progress);
 
+        // Update vocabulary box when exercise loads
+        this.updateVocabularyBox();
+
         console.log(`Loaded exercise ${progress.current}/${progress.total} (${currentDirection})`);
+    }
+
+    updateVocabularyBox() {
+        // Dynamically import VocabularyManager to avoid circular dependencies
+        import('./vocabulary-manager.js').then(({ VocabularyManager }) => {
+            const vocabularyManager = new VocabularyManager();
+            vocabularyManager.updateVocabularyBox();
+        }).catch(error => {
+            console.error('Error loading VocabularyManager:', error);
+        });
     }
 
     showNoExercisesMessage() {

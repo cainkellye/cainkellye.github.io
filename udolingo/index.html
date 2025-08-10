@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -57,6 +57,28 @@
                         <button id="next-btn">Skip</button>
                         <button id="clear-btn">Clear</button>
                         <button id="submit-btn">Submit</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container">
+                <div id="vocab-box-header">
+                    <h2>Vocabulary</h2>
+                    <span id="vocab-toggle">▼</span>
+                </div>
+                <div id="vocab-box-content">
+                    <div id="vocab-container">
+                        <!--
+                        This will contain a two column grid.
+                        In the left column the words from the prompt.
+                        In the right column, their translations from the main vocabulary, if present. Empty if not saved yet.
+                        Words / expressions in both column is editable.
+                        -->
+                    </div>
+                    <div class="modal-buttons">
+                        <button id="words-from-clipboard-btn">Replace from Clipboard</button>
+                        <button id="verify-words-btn" disabled>Verify with LLM</button>
+                        <button id="save-words-btn">Save</button>
                     </div>
                 </div>
             </div>

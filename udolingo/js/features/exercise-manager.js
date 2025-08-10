@@ -5,12 +5,14 @@
 
 import { AppState } from '../core/state.js';
 import { DirectionManager } from './direction-manager.js';
+import { VocabularyManager } from './vocabulary-manager.js';
 import { UIManager } from '../managers/ui-manager.js';
 import { ArrayUtils, StringUtils } from '../utils/helpers.js';
 
 export class ExerciseManager {
     constructor() {
         this.directionManager = new DirectionManager();
+        this.vocabularyManager = new VocabularyManager();
         this.uiManager = new UIManager();
     }
 
@@ -84,14 +86,17 @@ export class ExerciseManager {
         const progress = AppState.getProgress();
         this.uiManager.updateLessonDisplay(exerciseData, progress);
 
+        // Update vocabulary box when exercise loads
+        this.vocabularyManager.updateVocabularyBox();
+
         console.log(`Loaded exercise ${progress.current}/${progress.total} (${currentDirection})`);
     }
 
     showNoExercisesMessage() {
-        const prompt = document.getElementById('prompt');
-        const responseContainer = document.getElementById('response-container');
-        const wordBankContainer = document.getElementById('word-bank-container');
-        const feedback = document.getElementById('feedback');
+        const prompt = document.elements.prompt;
+        const responseContainer = document.elements.responseContainer;
+        const wordBankContainer = document.elements.wordBankContainer;
+        const feedback = document.elements.feedback;
 
         if (prompt) prompt.textContent = "No exercises loaded.";
         if (responseContainer) responseContainer.textContent = "";

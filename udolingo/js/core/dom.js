@@ -1,4 +1,4 @@
-/**
+﻿/**
  * DOM Elements Management
  * Centralized access to DOM elements with error handling
  */
@@ -30,6 +30,15 @@ export class DOMElements {
             saveCurrent: this.getElement('save-current-btn'),
             share: this.getElement('share-btn'),
             currentConfig: this.getElement('current-config-btn'),
+            
+            // Vocabulary box elements
+            vocabBoxHeader: this.getElement('vocab-box-header'),
+            vocabBoxContent: this.getElement('vocab-box-content'),
+            vocabContainer: this.getElement('vocab-container'),
+            vocabToggle: this.getElement('vocab-toggle'),
+            wordsFromClipboardBtn: this.getElement('words-from-clipboard-btn'),
+            verifyWordsBtn: this.getElement('verify-words-btn'),
+            saveWordsBtn: this.getElement('save-words-btn'),
             
             // Config panel elements
             openConfigPanel: this.getElement('open-config-panel-btn'),
@@ -171,6 +180,21 @@ export class DOMElements {
                 element.setAttribute(key, value);
             });
         }
+        
+        // Handle data attributes
+        Object.keys(options).forEach(key => {
+            if (key.startsWith('data-')) {
+                element.setAttribute(key, options[key]);
+            }
+        });
+        
+        // Handle other HTML attributes
+        const htmlAttributes = ['value', 'type', 'placeholder', 'id', 'name'];
+        htmlAttributes.forEach(attr => {
+            if (options[attr] !== undefined) {
+                element.setAttribute(attr, options[attr]);
+            }
+        });
         
         if (options.style) {
             Object.assign(element.style, options.style);

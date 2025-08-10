@@ -8,13 +8,12 @@ import { AppState } from '../core/state.js';
 
 export class DebugUtils {
     static setupGlobalDebugFunctions() {
-        const storageManager = new StorageManager();
         const urlHandler = new URLHandler();
 
         window.udolingoDebug = {
             clearAllLessons: () => {
                 if (confirm('Are you sure you want to delete ALL saved lessons? This cannot be undone.')) {
-                    const success = storageManager.clearAllSavedLessons();
+                    const success = StorageManager.clearAllSavedLessons();
                     if (success) {
                         console.log('All lessons cleared');
                         if (window.udolingoApp?.managers?.ui) {
@@ -26,14 +25,30 @@ export class DebugUtils {
                 }
             },
 
+            clearAllVocab: () => {
+                if (confirm('Are you sure you want to delete ALL saved vocabulary? This cannot be undone.')) {
+                    const success = StorageManager.clearVocabulary();
+                    if (success) {
+                        console.log('All vocabulary cleared');
+                    }
+                }
+            },
+
             showStorageInfo: () => {
-                const info = storageManager.getStorageInfo();
+                const info = StorageManager.getStorageInfo();
                 console.table(info);
                 return info;
             },
 
             getSavedLessons: () => {
-                return storageManager.getSavedLessons();
+                return StorageManager.getSavedLessons();
+            },
+
+            showLanguagePairVocab(langA, langB) {
+                const pairKey = [langA, langB].sort().join(':');
+                const vocab = StorageManager.getCentralVocabulary();
+                const decompressedVocab = StorageManager.decompressData(vocab[pairKey] || []);
+                console.table(decompressedVocab);
             },
 
             generateShareURL: (config) => {
@@ -85,8 +100,8 @@ export class DebugUtils {
                                     B: `Oración de prueba ${i} en español`
                                 }))
                             };
-                            const compressed = storageManager.compressData(testData);
-                            const decompressed = storageManager.decompressData(compressed);
+                            const compressed = StorageManager.compressData(testData);
+                            const decompressed = StorageManager.decompressData(compressed);
                             console.log('Original size:', JSON.stringify(testData).length);
                             console.log('Compressed size:', compressed.length);
                             console.log('Compression ratio:', 
@@ -153,7 +168,7 @@ export class DebugUtils {
                 const data = {
                     version: '1.0.0',
                     timestamp: new Date().toISOString(),
-                    lessons: storageManager.getSavedLessons(),
+                    lessons: StorageManager.getSavedLessons(),
                     settings: {}
                 };
                 
@@ -176,7 +191,9 @@ Udolingo Debug Console Commands:
 Data & Storage:
   - showStorageInfo()     Show storage usage statistics
   - getSavedLessons()     List all saved lessons
+  - showLanguagePairVocab(langA, langB)    Show vocabulary for language pair
   - clearAllLessons()     Delete all saved lessons (with confirmation)
+  - clearAllVocab()       Delete all saved vocabulary (with confirmation)
   - exportData()          Export all data to JSON file
 
 URLs & Sharing:

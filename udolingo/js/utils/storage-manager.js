@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Storage Manager
  * Handles localStorage operations with compression and error handling
  */
@@ -6,16 +6,54 @@
 import { StringUtils, ValidationUtils } from './helpers.js';
 import { LZString } from './lz-string.js';
 
-export class StorageManager {
+class StorageManagerClass {
     constructor() {
         this.prefix = 'udolingo_';
         this.lessonPrefix = `${this.prefix}lesson_`;
         this.indexKey = `${this.prefix}lessons_index`;
+        this.vocabKey = `${this.prefix}central_vocabulary`;
     }
 
-    /**
-     * Save a lesson configuration to localStorage with compression
-     */
+    getCentralVocabulary() {
+        try {
+            const vocabData = this.getItem(this.vocabKey);
+            if (!vocabData) {
+                console.log("No central vocabulary found");
+                return {};
+            }
+
+            console.log("Central vocabulary loaded:", Object.keys(vocabData).length, "language pairs");
+            return vocabData;
+        } catch (error) {
+            console.error('Error getting central vocabulary:', error);
+            return {};
+        }
+    }
+
+    setCentralVocabulary(vocabulary) {
+        try {
+            const success = this.setItem(this.vocabKey, vocabulary);
+            if (success) {
+                console.log("Central vocabulary saved:", Object.keys(vocabulary).length, "language pairs");
+            }
+            return success;
+        } catch (error) {
+            console.error('Error saving central vocabulary:', error);
+            return false;
+        }
+    }
+
+    clearVocabulary() {
+        try {
+            this.removeItem(this.vocabKey);
+            console.log('Central vocabulary cleared');
+            return true;
+        } catch (error) {
+            console.error('Error clearing vocabulary:', error);
+            return false;
+        }
+    }
+
     saveLesson(config) {
         if (!config || !ValidationUtils.isValidLessonConfig(config)) {
             console.error('Invalid lesson configuration');
@@ -86,9 +124,6 @@ export class StorageManager {
         }
     }
 
-    /**
-     * Compress data using LZ-String
-     */
     compressData(data) {
         try {
             const json = JSON.stringify(data);
@@ -99,9 +134,6 @@ export class StorageManager {
         }
     }
 
-    /**
-     * Decompress data using LZ-String
-     */
     decompressData(compressedData) {
         try {
             // Handle both compressed and uncompressed data for backward compatibility
@@ -119,10 +151,7 @@ export class StorageManager {
             return null;
         }
     }
-    
-    /**
-     * Get all saved lessons metadata
-     */
+
     getSavedLessons() {
         try {
             const indexData = this.getItem(this.indexKey);
@@ -143,10 +172,7 @@ export class StorageManager {
         const savedLessons = this.getSavedLessons();
         return Object.values(savedLessons).some(lesson => lesson.title === title);
     }
-    
-    /**
-     * Set the lessons index (metadata only)
-     */
+
     setSavedLessonsIndex(lessonsIndex) {
         try {
             return this.setItem(this.indexKey, lessonsIndex);
@@ -155,10 +181,7 @@ export class StorageManager {
             return false;
         }
     }
-    
-    /**
-     * Get a specific saved lesson by ID (full data)
-     */
+
     getSavedLesson(id) {
         try {
             const compressedData = this.getItem(`${this.lessonPrefix}${id}`);
@@ -180,10 +203,7 @@ export class StorageManager {
             return null;
         }
     }
-    
-    /**
-     * Delete a saved lesson by ID
-     */
+
     deleteLesson(id) {
         try {
             // Remove the lesson data
@@ -214,10 +234,7 @@ export class StorageManager {
             return false;
         }
     }
-    
-    /**
-     * Rename a saved lesson
-     */
+
     renameLesson(id, newTitle) {
         try {
             // Update the full lesson data
@@ -262,10 +279,7 @@ export class StorageManager {
             return false;
         }
     }
-    
-    /**
-     * localStorage utility functions
-     */
+
     setItem(key, value) {
         try {
             const dataToStore = typeof value === 'string' ? value : JSON.stringify(value);
@@ -313,16 +327,10 @@ export class StorageManager {
         }
     }
 
-    /**
-     * Handle storage quota exceeded
-     */
     handleQuotaExceeded() {
         alert('Storage quota exceeded. Please delete some saved lessons to free up space.');
     }
-    
-    /**
-     * Check localStorage availability and health
-     */
+
     checkStorageHealth() {
         try {
             const testKey = `${this.prefix}test`;
@@ -350,10 +358,7 @@ export class StorageManager {
             return false;
         }
     }
-    
-    /**
-     * Clear all saved lessons (emergency cleanup)
-     */
+
     clearAllSavedLessons() {
         try {
             const savedLessons = this.getSavedLessons();
@@ -373,10 +378,7 @@ export class StorageManager {
             return false;
         }
     }
-    
-    /**
-     * Get storage usage info
-     */
+
     getStorageInfo() {
         try {
             const savedLessons = this.getSavedLessons();
@@ -396,6 +398,19 @@ export class StorageManager {
                 }
             });
             
+            // Add vocabulary size and count vocabulary pairs
+            const vocabData = this.getCentralVocabulary();
+            totalSize += JSON.stringify(vocabData).length;
+            
+            // Count vocabulary entries and language pairs
+            let totalVocabEntries = 0;
+            const languagePairs = Object.keys(vocabData);
+            
+            languagePairs.forEach(pairKey => {
+                const pairVocab = this.decompressData(vocabData[pairKey]);
+                totalVocabEntries += pairVocab.length;
+            });
+            
             // Estimate total localStorage usage
             let totalLocalStorageSize = 0;
             for (let key in localStorage) {
@@ -407,6 +422,8 @@ export class StorageManager {
             return {
                 isAvailable: typeof(Storage) !== "undefined",
                 lessonCount: lessonCount,
+                languagePairs: languagePairs.length,
+                totalVocabEntries: totalVocabEntries,
                 udolingoStorageSize: totalSize,
                 totalLocalStorageSize: totalLocalStorageSize,
                 formattedSize: StringUtils.formatBytes(totalSize),
@@ -418,6 +435,8 @@ export class StorageManager {
             return {
                 isAvailable: false,
                 lessonCount: 0,
+                languagePairs: 0,
+                totalVocabEntries: 0,
                 udolingoStorageSize: 0,
                 totalLocalStorageSize: 0,
                 formattedSize: '0 bytes',
@@ -427,3 +446,5 @@ export class StorageManager {
         }
     }
 }
+
+export const StorageManager = new StorageManagerClass();

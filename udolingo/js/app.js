@@ -11,6 +11,7 @@ import { UIManager } from './managers/ui-manager.js';
 import { SidebarManager } from './managers/sidebar-manager.js';
 import { ConfigManager } from './managers/config-manager.js';
 import { EventManager } from './managers/event-manager.js';
+import { VocabularyManager } from './features/vocabulary-manager.js';
 import { URLHandler } from './utils/url-handler.js';
 import { StorageManager } from './utils/storage-manager.js';
 import { LLMPromptGenerator } from './features/llm-prompt-generator.js';
@@ -29,7 +30,6 @@ class UdolingoApp {
             events: new EventManager()
         };
         this.urlHandler = new URLHandler();
-        this.storageManager = new StorageManager();
         this.llmGenerator = new LLMPromptGenerator();
     }
 
@@ -42,11 +42,11 @@ class UdolingoApp {
             this.managers.events.init();
             this.llmGenerator.init();
             
+            // Initialize vocabulary box as collapsed
+            this.managers.ui.initializeVocabularyBox();
+            
             // Setup debug utilities
             DebugUtils.setupGlobalDebugFunctions();
-            
-            // Display storage info
-            this.displayStorageInfo();
             
             // Load initial configuration
             await this.loadInitialConfig();
@@ -55,15 +55,6 @@ class UdolingoApp {
         } catch (error) {
             console.error('Failed to initialize Udolingo:', error);
             this.handleInitializationError(error);
-        }
-    }
-
-    displayStorageInfo() {
-        const storageInfo = this.storageManager.getStorageInfo();
-        console.log('Storage info on startup:', storageInfo);
-        
-        if (!storageInfo.isAvailable) {
-            console.warn('localStorage is not available');
         }
     }
 
@@ -93,7 +84,7 @@ class UdolingoApp {
     }
 
     getLatestSavedLesson() {
-        const savedLessons = this.storageManager.getSavedLessons();
+        const savedLessons = StorageManager.getSavedLessons();
         const lessonIds = Object.keys(savedLessons);
         
         if (lessonIds.length === 0) {

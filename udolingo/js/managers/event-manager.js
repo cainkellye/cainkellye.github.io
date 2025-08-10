@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Event Manager
  * Centralized event handling for the application
  */
@@ -37,6 +37,7 @@ export class EventManager {
         this.setupResponseManagementEvents();
         this.setupNavigationEvents();
         this.setupTranslationEvents();
+        this.setupVocabularyEvents();
         this.setupConfigPanelEvents();
         this.setupTabSwitchingEvents();
         this.setupRenameModalEvents();
@@ -128,6 +129,31 @@ export class EventManager {
     }
 
     /**
+     * Vocabulary box events
+     */
+    setupVocabularyEvents() {
+        // Toggle vocabulary box
+        DOM.addEventListener('vocabBoxHeader', 'click', () => {
+            this.uiManager.toggleVocabularyBox();
+        });
+
+        // Load vocabulary from clipboard
+        DOM.addEventListener('wordsFromClipboardBtn', 'click', () => {
+            this.vocabularyManager.loadVocabularyFromClipboard();
+        });
+
+        // Save vocabulary
+        DOM.addEventListener('saveWordsBtn', 'click', () => {
+            this.vocabularyManager.saveVocabulary();
+        });
+
+        // Verify vocabulary with LLM
+        DOM.addEventListener('verifyWordsBtn', 'click', () => {
+            this.vocabularyManager.generateVerificationPrompt();
+        });
+    }
+
+    /**
      * Configuration panel events
      */
     setupConfigPanelEvents() {
@@ -195,7 +221,7 @@ export class EventManager {
             if (renameInput && AppState.currentRenameId) {
                 const newTitle = renameInput.value.trim();
                 if (newTitle) {
-                    const success = this.configManager.storageManager.renameLesson(
+                    const success = this.configManager.renameLesson(
                         AppState.currentRenameId, 
                         newTitle
                     );

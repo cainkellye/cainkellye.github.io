@@ -44,6 +44,13 @@ export class DebugUtils {
                 return StorageManager.getSavedLessons();
             },
 
+            showLanguagePairVocab(langA, langB) {
+                const pairKey = [langA, langB].sort().join(':');
+                const vocab = StorageManager.getCentralVocabulary();
+                const decompressedVocab = StorageManager.decompressData(vocab[pairKey] || []);
+                console.table(decompressedVocab);
+            },
+
             generateShareURL: (config) => {
                 try {
                     const configToUse = config || AppState.config;
@@ -184,6 +191,7 @@ Udolingo Debug Console Commands:
 Data & Storage:
   - showStorageInfo()     Show storage usage statistics
   - getSavedLessons()     List all saved lessons
+  - showLanguagePairVocab(langA, langB)    Show vocabulary for language pair
   - clearAllLessons()     Delete all saved lessons (with confirmation)
   - clearAllVocab()       Delete all saved vocabulary (with confirmation)
   - exportData()          Export all data to JSON file

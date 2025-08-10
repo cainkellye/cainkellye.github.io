@@ -22,8 +22,8 @@ class StorageManagerClass {
                 return {};
             }
 
-            console.log("Central vocabulary loaded:", Object.keys(this.vocabData).length, "language pairs");
-            return this.vocabData;
+            console.log("Central vocabulary loaded:", Object.keys(vocabData).length, "language pairs");
+            return vocabData;
         } catch (error) {
             console.error('Error getting central vocabulary:', error);
             return {};
@@ -407,14 +407,8 @@ class StorageManagerClass {
             const languagePairs = Object.keys(vocabData);
             
             languagePairs.forEach(pairKey => {
-                const pairVocab = vocabData[pairKey];
-                if (Array.isArray(pairVocab)) {
-                    // New array format: each element is a word pair
-                    totalVocabEntries += pairVocab.length;
-                } else if (typeof pairVocab === 'object' && pairVocab !== null) {
-                    // Old format: count and divide by 2 for bidirectional
-                    totalVocabEntries += Math.floor(Object.keys(pairVocab).length / 2);
-                }
+                const pairVocab = this.decompressData(vocabData[pairKey]);
+                totalVocabEntries += pairVocab.length;
             });
             
             // Estimate total localStorage usage
@@ -428,8 +422,8 @@ class StorageManagerClass {
             return {
                 isAvailable: typeof(Storage) !== "undefined",
                 lessonCount: lessonCount,
-                vocabCount: totalVocabEntries,
                 languagePairs: languagePairs.length,
+                totalVocabEntries: totalVocabEntries,
                 udolingoStorageSize: totalSize,
                 totalLocalStorageSize: totalLocalStorageSize,
                 formattedSize: StringUtils.formatBytes(totalSize),
@@ -441,8 +435,8 @@ class StorageManagerClass {
             return {
                 isAvailable: false,
                 lessonCount: 0,
-                vocabCount: 0,
                 languagePairs: 0,
+                totalVocabEntries: 0,
                 udolingoStorageSize: 0,
                 totalLocalStorageSize: 0,
                 formattedSize: '0 bytes',

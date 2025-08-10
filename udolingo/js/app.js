@@ -48,9 +48,6 @@ class UdolingoApp {
             // Setup debug utilities
             DebugUtils.setupGlobalDebugFunctions();
             
-            // Display storage info
-            this.displayStorageInfo();
-            
             // Load initial configuration
             await this.loadInitialConfig();
             
@@ -58,19 +55,6 @@ class UdolingoApp {
         } catch (error) {
             console.error('Failed to initialize Udolingo:', error);
             this.handleInitializationError(error);
-        }
-    }
-
-    displayStorageInfo() {
-        const storageInfo = StorageManager.getStorageInfo();
-        console.log('Storage info on startup:', storageInfo);
-        
-        if (!storageInfo.isAvailable) {
-            console.warn('localStorage is not available');
-        }
-
-        if (storageInfo.vocabCount > 0) {
-            console.log(`Central vocabulary contains ${storageInfo.vocabCount} entries across ${storageInfo.languagePairs} language pairs`);
         }
     }
 

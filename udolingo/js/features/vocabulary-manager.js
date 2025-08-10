@@ -9,17 +9,26 @@ import { StringUtils, ArrayUtils, ClipboardUtils } from '../utils/helpers.js';
 import { StorageManager } from '../utils/storage-manager.js';
 
 export class VocabularyManager {
-    constructor() {
-        this.centralVocab = this.loadCentralVocabulary();
+    static currentLanguagePairKey = null; // lazy initialization
+    static currentLanguagePairVocab = null; // lazy initialization
+
+    getCentralVocabulary() {
+        return StorageManager.getCentralVocabulary() || {};
     }
 
-    loadCentralVocabulary() {
-        let vocab = StorageManager.getCentralVocabulary() || {};
-        return vocab;
+    saveCurrentLanguagePairVocab() {
+        if (!VocabularyManager.currentLanguagePairKey || !VocabularyManager.currentLanguagePairVocab) {
+            console.error('Current language pair key or current vocabulary not initialized');
+            return;
+        }
+        const centralVocab = this.getCentralVocabulary();
+        const compressedLanguagePairVocab = StorageManager.compressData(VocabularyManager.currentLanguagePairVocab);
+        centralVocab[VocabularyManager.currentLanguagePairKey] = compressedLanguagePairVocab;
+        StorageManager.setCentralVocabulary(centralVocab);
     }
 
-    saveCentralVocabulary() {
-        StorageManager.setCentralVocabulary(this.centralVocab);
+    getLanguageOrder() {
+        return AppState.config['langA-B'].sort();
     }
 
     getLanguagePairKey() {
@@ -29,14 +38,22 @@ export class VocabularyManager {
 
     getCurrentLanguagePairVocab() {
         const pairKey = this.getLanguagePairKey();
-        if (!this.centralVocab[pairKey]) {
-            this.centralVocab[pairKey] = [];
+        if (VocabularyManager.currentLanguagePairKey !== pairKey) {
+            this._updateCurrentLanguagePairVocab(pairKey);
         }
-        return StorageManager.decompressData(this.centralVocab[pairKey]);
+        return VocabularyManager.currentLanguagePairVocab;
     }
 
-    getLanguageOrder() {
-        return AppState.config['langA-B'].sort();
+    _updateCurrentLanguagePairVocab(pairKey) {
+        console.log(`Updating current language pair vocabulary for key: ${pairKey}`);
+        VocabularyManager.currentLanguagePairKey = pairKey;
+        const centralVocab = this.getCentralVocabulary();
+        if (!centralVocab[pairKey]) {
+            centralVocab[pairKey] = [];
+        }
+        const decompressed = StorageManager.decompressData(centralVocab[pairKey]);
+        console.log(`Loaded ${decompressed.length} entries for language pair: ${pairKey}`);
+        VocabularyManager.currentLanguagePairVocab = decompressed;
     }
 
     findRelatedPhrases(word, currentLang) {
@@ -343,10 +360,10 @@ export class VocabularyManager {
         });
 
         if (savedCount > 0) {
-            this.saveCentralVocabulary();
+            this.saveCurrentLanguagePairVocab();
             alert(`Saved ${savedCount} vocabulary pairs (${sourceLang} ↔ ${targetLang}) to your central vocabulary.`);
         } else {
-            this.saveCentralVocabulary(); // Still save to persist deletions
+            this.saveCurrentLanguagePairVocab(); // Still save to persist deletions
             alert('Vocabulary updated. Removed translations have been deleted.');
         }
     }

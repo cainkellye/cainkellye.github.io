@@ -12,23 +12,18 @@ class StorageManagerClass {
         this.lessonPrefix = `${this.prefix}lesson_`;
         this.indexKey = `${this.prefix}lessons_index`;
         this.vocabKey = `${this.prefix}central_vocabulary`;
-        this.vocabCache = null; // Cache for central vocabulary to reduce redundant reads
     }
 
     getCentralVocabulary() {
         try {
-            if (this.vocabCache) {
-                return this.vocabCache;
-            }
             const vocabData = this.getItem(this.vocabKey);
             if (!vocabData) {
                 console.log("No central vocabulary found");
                 return {};
             }
 
-            this.vocabCache = this.decompressData(vocabData);
-            console.log("Central vocabulary loaded:", Object.keys(this.vocabCache).length, "entries");
-            return this.vocabCache;
+            console.log("Central vocabulary loaded:", Object.keys(this.vocabData).length, "language pairs");
+            return this.vocabData;
         } catch (error) {
             console.error('Error getting central vocabulary:', error);
             return {};
@@ -37,37 +32,13 @@ class StorageManagerClass {
 
     setCentralVocabulary(vocabulary) {
         try {
-            this.vocabCache = vocabulary; // Update cache
-            const compressed = this.compressData(vocabulary);
-            const success = this.setItem(this.vocabKey, compressed);
+            const success = this.setItem(this.vocabKey, vocabulary);
             if (success) {
-                console.log("Central vocabulary saved:", Object.keys(vocabulary).length, "entries");
+                console.log("Central vocabulary saved:", Object.keys(vocabulary).length, "language pairs");
             }
             return success;
         } catch (error) {
             console.error('Error saving central vocabulary:', error);
-            return false;
-        }
-    }
-
-    addToVocabulary(word, translation) {
-        try {
-            const vocab = this.getCentralVocabulary();
-            vocab[word.toLowerCase()] = translation;
-            return this.setCentralVocabulary(vocab);
-        } catch (error) {
-            console.error('Error adding to vocabulary:', error);
-            return false;
-        }
-    }
-
-    removeFromVocabulary(word) {
-        try {
-            const vocab = this.getCentralVocabulary();
-            delete vocab[word.toLowerCase()];
-            return this.setCentralVocabulary(vocab);
-        } catch (error) {
-            console.error('Error removing from vocabulary:', error);
             return false;
         }
     }

@@ -24,7 +24,7 @@ export class VocabularyManager {
 
     getLanguagePairKey() {
         // Create consistent key regardless of lesson order (alphabetical)
-        return this.getLanguageOrder().join('-').toLowerCase();
+        return this.getLanguageOrder().join(':').toLowerCase();
     }
 
     getCurrentLanguagePairVocab() {
@@ -32,7 +32,7 @@ export class VocabularyManager {
         if (!this.centralVocab[pairKey]) {
             this.centralVocab[pairKey] = [];
         }
-        return this.centralVocab[pairKey];
+        return StorageManager.decompressData(this.centralVocab[pairKey]);
     }
 
     getLanguageOrder() {
@@ -146,39 +146,6 @@ export class VocabularyManager {
         }
         
         return foundTranslations.size > 0 ? Array.from(foundTranslations).join(', ') : '';
-    }
-
-    saveVocabularyPair(sourceWord, sourceLang, targetWord, targetLang) {
-        const pairVocab = this.getCurrentLanguagePairVocab();
-        const [primaryLang, secondaryLang] = this.getLanguageOrder();
-        
-        // Determine correct order based on language alphabetical order
-        let primaryWord, secondaryWord;
-        if (sourceLang === primaryLang) {
-            primaryWord = sourceWord;
-            secondaryWord = targetWord;
-        } else {
-            primaryWord = targetWord;
-            secondaryWord = sourceWord;
-        }
-        
-        // Check if this pair already exists (avoid duplicates)
-        const normalizedPrimary = primaryWord.toLowerCase();
-        const normalizedSecondary = secondaryWord.toLowerCase();
-        
-        const existingIndex = pairVocab.findIndex(pair => 
-            Array.isArray(pair) && pair.length === 2 &&
-            pair[0].toLowerCase() === normalizedPrimary &&
-            pair[1].toLowerCase() === normalizedSecondary
-        );
-        
-        if (existingIndex === -1) {
-            // Add new pair
-            pairVocab.push([primaryWord, secondaryWord]);
-        } else {
-            // Update existing pair (in case of capitalization changes)
-            pairVocab[existingIndex] = [primaryWord, secondaryWord];
-        }
     }
 
     updateVocabularyBox() {
@@ -384,6 +351,23 @@ export class VocabularyManager {
         }
     }
 
+    saveVocabularyPair(sourceWord, sourceLang, targetWord, targetLang) {
+        const pairVocab = this.getCurrentLanguagePairVocab();
+        const [primaryLang, secondaryLang] = this.getLanguageOrder();
+        
+        // Determine correct order based on language alphabetical order
+        let primaryWord, secondaryWord;
+        if (sourceLang === primaryLang) {
+            primaryWord = sourceWord;
+            secondaryWord = targetWord;
+        } else {
+            primaryWord = targetWord;
+            secondaryWord = sourceWord;
+        }
+        
+        pairVocab.push([primaryWord, secondaryWord]);
+    }
+
     removeVocabularyPairsForSourceWord(sourceWord, sourceLang) {
         const pairVocab = this.getCurrentLanguagePairVocab();
         const [primaryLang, secondaryLang] = this.getLanguageOrder();
@@ -438,11 +422,11 @@ export class VocabularyManager {
         const promptKey = AppState.promptLang === languages[0] ? 'A' : 'B';
         const currentPrompt = currentExercise[promptKey];
 
-        const prompt = `Please verify these ${sourceLang} to ${targetLang} vocabulary translations in the context of "${currentPrompt}":
+        const prompt = `Please correct these ${sourceLang} to ${targetLang} vocabulary translations with regards to "${currentPrompt}":
 
 ${wordPairs.map((pair, index) => `${pair.source} → ${pair.translation}`).join('\n')}
 
-Output only the correct vocabulary list, formatted as "word → translation" or "word → translation1, translation2, ..." if necessary. Each on a separete line.`;
+Output only the correct vocabulary list, formatted as "word → translation1, translation2, ...". Each on a separete line.`;
 
         ClipboardUtils.copyText(prompt, 'Vocabulary verification prompt copied to clipboard! Paste it into your AI assistant.');
     }

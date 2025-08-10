@@ -69,9 +69,10 @@ export class VocabularyManager {
             const [primaryWord, secondaryWord] = pair;
             
             // Check if the word is contained in a larger phrase in the source language
-            const normalizedEntry = currentLang === primaryLang ? primaryWord.toLowerCase() : secondaryWord.toLowerCase();
+            const entry = currentLang === primaryLang ? primaryWord : secondaryWord;
+            const normalizedEntry = entry.toLowerCase();
             if (this.containsStandaloneWord(normalizedEntry, normalizedWord)) {
-                relatedPhrases.add(normalizedEntry);
+                relatedPhrases.add(entry);
             }
         }
 
@@ -105,33 +106,29 @@ export class VocabularyManager {
     extractVocabularyEntriesFromPrompt() {
         const wordsFromPrompt = this.extractWordsFromPrompt();
         const vocabularyEntries = [];
-        const addedEntries = new Set(); // Track what we've already added
         
         for (const word of wordsFromPrompt) {
-            const normalizedWord = word.toLowerCase();
+            const exactTranslations = this.lookupTranslation(word, AppState.promptLang);
+            if (exactTranslations === '---') {
+                // Words is striked out, skip
+                continue;
+            }
             const relatedPhrases = this.findRelatedPhrases(word, AppState.promptLang);
             
             if (relatedPhrases.length > 0) {
                 // Add the word itself if it has translations
-                const exactTranslations = this.lookupTranslation(word, AppState.promptLang);
                 if (exactTranslations) {
-                    if (!addedEntries.has(normalizedWord)) {
+                    if (!relatedPhrases.find(phrase => phrase.toLowerCase() === word.toLowerCase())) {
                         vocabularyEntries.push(word);
-                        addedEntries.add(normalizedWord);
                     }
                 }
                 // Add all related phrases as separate entries
                 for (const phrase of relatedPhrases) {
-                    const normalizedPhrase = phrase.toLowerCase();
-                    if (!addedEntries.has(normalizedPhrase)) {
-                        vocabularyEntries.push(phrase);
-                        addedEntries.add(normalizedPhrase);
-                    }
+                    vocabularyEntries.push(phrase);
                 }
-            } else if (!addedEntries.has(normalizedWord)) {
+            } else {
                 // No related phrases found, add the word itself
                 vocabularyEntries.push(word);
-                addedEntries.add(normalizedWord);
             }
         }
 

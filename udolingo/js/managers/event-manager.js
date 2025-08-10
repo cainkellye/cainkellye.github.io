@@ -90,8 +90,6 @@ export class EventManager {
             }
 
             this.exerciseManager.loadExercise(AppState.currentTaskIndex);
-            // Update vocabulary box with new exercise words
-            this.vocabularyManager.updateVocabularyBox();
         });
 
         DOM.addEventListener('shuffle', 'click', () => {
@@ -102,7 +100,6 @@ export class EventManager {
                 this.directionManager.shuffleDirections();
                 AppState.currentTaskIndex = 0;
                 this.exerciseManager.loadExercise(AppState.currentTaskIndex);
-                this.vocabularyManager.updateVocabularyBox();
                 AppState.clearMistakes();
             }
         });

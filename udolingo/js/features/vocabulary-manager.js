@@ -74,7 +74,8 @@ export class VocabularyManager {
                 relatedPhrases.add(normalizedEntry);
             }
         }
-        
+
+        relatedPhrases.delete(normalizedWord); // Remove the exact word itself if present
         return Array.from(relatedPhrases);
     }
 
@@ -107,10 +108,18 @@ export class VocabularyManager {
         const addedEntries = new Set(); // Track what we've already added
         
         for (const word of wordsFromPrompt) {
-            // Find all related phrases for this word
+            const normalizedWord = word.toLowerCase();
             const relatedPhrases = this.findRelatedPhrases(word, AppState.promptLang);
             
             if (relatedPhrases.length > 0) {
+                // Add the word itself if it has translations
+                const exactTranslations = this.lookupTranslation(word, AppState.promptLang);
+                if (exactTranslations) {
+                    if (!addedEntries.has(normalizedWord)) {
+                        vocabularyEntries.push(word);
+                        addedEntries.add(normalizedWord);
+                    }
+                }
                 // Add all related phrases as separate entries
                 for (const phrase of relatedPhrases) {
                     const normalizedPhrase = phrase.toLowerCase();
@@ -119,23 +128,10 @@ export class VocabularyManager {
                         addedEntries.add(normalizedPhrase);
                     }
                 }
-            } else {
-                // No related phrases found, add the word itself if it has translations
-                const exactTranslations = this.lookupTranslation(word, AppState.promptLang);
-                if (exactTranslations) {
-                    const normalizedWord = word.toLowerCase();
-                    if (!addedEntries.has(normalizedWord)) {
-                        vocabularyEntries.push(word);
-                        addedEntries.add(normalizedWord);
-                    }
-                } else {
-                    // No exact translation either, still add the word for manual entry
-                    const normalizedWord = word.toLowerCase();
-                    if (!addedEntries.has(normalizedWord)) {
-                        vocabularyEntries.push(word);
-                        addedEntries.add(normalizedWord);
-                    }
-                }
+            } else if (!addedEntries.has(normalizedWord)) {
+                // No related phrases found, add the word itself
+                vocabularyEntries.push(word);
+                addedEntries.add(normalizedWord);
             }
         }
 

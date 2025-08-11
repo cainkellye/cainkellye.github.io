@@ -38,7 +38,17 @@ export const ArrayUtils = {
 
 export const StringUtils = {
     removePunctuation(sentence) {
-        return sentence.replace(/[.,!?¿¡—–\()"]/g, '');
+        return this.clean(sentence).replace(/[.,!?¿¡—–\()"]/g, '');
+    },
+
+    clean(sentence) {
+        if (sentence) {
+            return sentence
+                .trim()
+                .replace(/[\u2018\u2019]/g, "'") // Replace smart quotes with standard quotes
+                .replace(/[\u201C\u201D]/g, '"');
+        }
+        return sentence;
     },
 
     splitSentence(sentence) {

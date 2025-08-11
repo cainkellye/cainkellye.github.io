@@ -97,15 +97,20 @@ export class UIManager {
         
         if (!vocabContent || !vocabToggle) return;
 
-        const isCollapsed = vocabContent.style.display === 'none';
+        const isOpen = this.vocabularyBoxIsOpen();
         
-        vocabContent.style.display = isCollapsed ? 'block' : 'none';
+        vocabContent.style.display = isOpen ? 'none' : 'block';
 
-        if (isCollapsed) {
-            vocabToggle.classList.add('rotated');
-        } else {
+        if (isOpen) {
             vocabToggle.classList.remove('rotated');
+        } else {
+            vocabToggle.classList.add('rotated');
         }
+    }
+
+    vocabularyBoxIsOpen() {
+        const vocabContent = DOM.elements.vocabBoxContent;
+        return vocabContent && vocabContent.style.display !== 'none';
     }
 
     createWordBankButton(word) {

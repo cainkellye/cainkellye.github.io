@@ -135,6 +135,8 @@ export class EventManager {
         // Toggle vocabulary box
         DOM.addEventListener('vocabBoxHeader', 'click', () => {
             this.uiManager.toggleVocabularyBox();
+            // Update the vocabulary box content when it gets opened
+            this.vocabularyManager.updateVocabularyBox();
         });
 
         // Load vocabulary from clipboard

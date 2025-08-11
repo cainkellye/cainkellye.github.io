@@ -59,6 +59,15 @@ export const AppState = {
         }
         return this.exercises[this.currentTaskIndex];
     },
+
+    getCurrentPrompt() {
+        const currentExercise = this.getCurrentExercise();
+        if (!currentExercise) return '';
+
+        const promptKey = this.promptLang === this.config['langA-B'][0] ? 'A' : 'B';
+
+        return currentExercise[promptKey];
+    },
     
     hasExercises() {
         return this.exercises && this.exercises.length > 0;

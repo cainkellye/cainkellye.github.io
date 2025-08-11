@@ -56,72 +56,41 @@ export class VocabularyManager {
         VocabularyManager.currentLanguagePairVocab = decompressed;
     }
 
-    findRelatedPhrases(word, currentLang) {
-        const pairVocab = this.getCurrentLanguagePairVocab();
-        const normalizedWord = word.toLowerCase();
-        const [primaryLang, secondaryLang] = this.getLanguageOrder();
-        const relatedPhrases = new Set();
-        
-        // Search for entries that contain the word as a standalone word
-        for (const pair of pairVocab) {
-            if (!Array.isArray(pair) || pair.length !== 2) continue;
-            
-            const [primaryWord, secondaryWord] = pair;
-            
-            // Check if the word is contained in a larger phrase in the source language
-            const entry = currentLang === primaryLang ? primaryWord : secondaryWord;
-            const normalizedEntry = entry.toLowerCase();
-            if (this.containsStandaloneWord(normalizedEntry, normalizedWord)) {
-                relatedPhrases.add(entry);
-            }
-        }
-
-        relatedPhrases.delete(normalizedWord); // Remove the exact word itself if present
-        return Array.from(relatedPhrases);
-    }
-
-    containsStandaloneWord(text, word) {
-        // Check if the word appears as a standalone word (not part of another word)
-        // Uses word boundaries to ensure it's not part of another word
-        const regex = new RegExp(`\\b${word}\\b`, 'i');
-        return regex.test(text);
-    }
-
-    extractWordsFromPrompt() {
-        const currentExercise = AppState.getCurrentExercise();
-        if (!currentExercise || !AppState.config) return [];
-
-        const promptKey = AppState.promptLang === AppState.config['langA-B'][0] ? 'A' : 'B';
-        const prompt = currentExercise[promptKey];
-        
+    extractWordsFromPrompt(prompt) {
         if (!prompt) return [];
 
         const words = ArrayUtils.removeDuplicates(StringUtils.splitSentenceClean(prompt))
-            .map(word => word.toLowerCase())
-            .filter(word => word.length >= 3)
-
         return words;
     }
 
-    extractVocabularyEntriesFromPrompt() {
-        const wordsFromPrompt = this.extractWordsFromPrompt();
+    extractVocabularyEntriesFromPrompt(prompt) {
+        const wordsFromPrompt = this.extractWordsFromPrompt(prompt);
         const vocabularyEntries = [];
         
         for (const word of wordsFromPrompt) {
             const exactTranslations = this.lookupTranslation(word, AppState.promptLang);
             if (exactTranslations === '---') {
+                console.log(`Skipping striked out word: "${word}"`);
                 // Words is striked out, skip
                 continue;
             }
-            const relatedPhrases = this.findRelatedPhrases(word, AppState.promptLang);
+            let relatedPhrases = this.findRelatedPhrases(word, AppState.promptLang);
             
             if (relatedPhrases.length > 0) {
-                // Add the word itself if it has translations
-                if (exactTranslations) {
-                    if (!relatedPhrases.find(phrase => phrase.toLowerCase() === word.toLowerCase())) {
-                        vocabularyEntries.push(word);
+                const phrasesInPrompt = relatedPhrases.filter(phrase => prompt.toLowerCase().includes(phrase.toLowerCase()));
+                if (phrasesInPrompt.length > 0) {
+                    // If some related phrases are in the prompt, filter to only those
+                    relatedPhrases = phrasesInPrompt;
+                } else {
+                    // Add the word itself, as it appears in the prompt
+                    vocabularyEntries.push(word);
+
+                    if (exactTranslations || word.length < 3) {
+                        // Skip if we have exact translations or if the word is too short
+                        continue;
                     }
-                }
+                } 
+
                 // Add all related phrases as separate entries
                 for (const phrase of relatedPhrases) {
                     vocabularyEntries.push(phrase);
@@ -129,10 +98,20 @@ export class VocabularyManager {
             } else {
                 // No related phrases found, add the word itself
                 vocabularyEntries.push(word);
+
+                if (!exactTranslations || exactTranslations.length === 0) {
+                    // Fetch related entries based on chopped prefix
+                    const relatedEntriesByChop = this.findRelatedEntriesByChop(word, AppState.promptLang);
+
+                    // Add all related entries
+                    for (const relatedEntry of relatedEntriesByChop) {
+                        vocabularyEntries.push(relatedEntry);
+                    }
+                }
             }
         }
 
-        return vocabularyEntries;
+        return ArrayUtils.removeDuplicates(vocabularyEntries);
     }
 
     lookupTranslation(word, currentLang) {
@@ -149,8 +128,10 @@ export class VocabularyManager {
             
             // Check if current word matches either position
             if (currentLang === primaryLang && primaryWord.toLowerCase() === normalizedWord) {
+                if (secondaryWord === '---') return '---'; // Striked out word
                 foundTranslations.add(secondaryWord);
             } else if (currentLang === secondaryLang && secondaryWord.toLowerCase() === normalizedWord) {
+                if (primaryWord === '---') return '---'; // Striked out word
                 foundTranslations.add(primaryWord);
             }
         }
@@ -158,8 +139,97 @@ export class VocabularyManager {
         return foundTranslations.size > 0 ? Array.from(foundTranslations).join(', ') : '';
     }
 
+    findRelatedPhrases(word, currentLang) {
+        const pairVocab = this.getCurrentLanguagePairVocab();
+        const [primaryLang, secondaryLang] = this.getLanguageOrder();
+        const relatedPhrases = new Set();
+        
+        // Search for entries that contain the word as a standalone word
+        for (const pair of pairVocab) {
+            const [primaryWord, secondaryWord] = pair;
+            
+            // Check if the word is contained in a larger phrase in the source language
+            const entry = currentLang === primaryLang ? primaryWord : secondaryWord;
+            const translation = currentLang === primaryLang ? secondaryWord : primaryWord;
+            if (translation === '---') continue; // Skip striked out words
+
+            if (this.containsStandaloneWord(entry, word)) {
+                relatedPhrases.add(entry);
+                console.log(`Found related phrase: "${entry}" for word "${word}"`);
+            }
+        }
+
+        // TODO return translations too, as we already have them
+
+        console.log("Related phrases found:", relatedPhrases);
+        relatedPhrases.delete(word); // Remove the exact word itself if present
+        console.log("Removed exact match, remaining related phrases:", relatedPhrases);
+        return Array.from(relatedPhrases);
+    }
+
+    containsStandaloneWord(text, word) {
+        if (text.length < word.length) {
+            // Same length is needed to match different cases
+            return false; // If text is shorter than the word, it can't contain it
+        }
+        // Check if the word appears as a standalone word (not part of another word)
+        // Uses word boundaries to ensure it's not part of another word
+        // original, bad with unicode: const regex = new RegExp(`\\b${word}\\b`, 'iu');
+
+        // Performance critical function, check with console.log
+        // console.log(`Running containsStandaloneWord`);
+
+        // No escaping for now
+        // const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape special regex characters
+        const pattern = `(?<!\\p{L})${word}(?!\\p{L})`;
+        const regex = new RegExp(pattern, 'iu'); // 'u' for unicode support, 'i' for case-insensitive
+
+        return regex.test(text);
+    }
+
+    choppedPrefix(str) {
+        const chopLen = Math.max(1, Math.min(4, Math.floor(str.length * 0.3)));
+        return str.slice(0, str.length - chopLen);
+    }
+
+    findRelatedEntriesByChop(word, currentLang) {
+        if (word.length < 4) {
+            // Skip very short words, as they are unlikely to have related phrases
+            return [];
+        }
+        const pairVocab = this.getCurrentLanguagePairVocab();
+        const [primaryLang, secondaryLang] = this.getLanguageOrder();
+        const relatedPhrases = new Set();
+
+        const qPrefix = word.length > 5 ? this.choppedPrefix(word) : word;
+
+        for (const pair of pairVocab) {
+            const [primaryWord, secondaryWord] = pair;
+            const entry = currentLang === primaryLang ? primaryWord : secondaryWord;
+            const translation = currentLang === primaryLang ? secondaryWord : primaryWord;
+            if (translation === '---') continue; // Skip striked out words
+
+            if (typeof entry !== "string") continue;
+
+            const wPrefix = entry.length > 5 ? this.choppedPrefix(entry) : entry;
+
+            // Symmetric chopped-prefix match
+            if (
+                (entry.startsWith(qPrefix) || word.startsWith(wPrefix)) &&
+                Math.abs(entry.length - word.length) <= 3
+            ) {
+                relatedPhrases.add(entry);
+                console.log(`Found related entry by chop: "${entry}" for word "${word}"`);
+            }
+        }
+
+        relatedPhrases.delete(word); // Remove exact match
+        return Array.from(relatedPhrases);
+    }
+ 
     updateVocabularyBox() {
-        const vocabularyEntries = this.extractVocabularyEntriesFromPrompt();
+        const prompt = AppState.getCurrentPrompt();
+        const vocabularyEntries = this.extractVocabularyEntriesFromPrompt(prompt);
         const vocabContainer = DOM.elements.vocabContainer;
         
         if (!vocabContainer || vocabularyEntries.length === 0) {
@@ -264,11 +334,6 @@ export class VocabularyManager {
                 }
             }
 
-            // If no separator found, treat the whole line as source word
-            if (!source) {
-                source = line.trim();
-            }
-
             if (source) {
                 const wordRow = this.createVocabularyRowFromData(source, translation, index);
                 vocabGrid.appendChild(wordRow);
@@ -330,8 +395,8 @@ export class VocabularyManager {
         let savedCount = 0;
 
         sourceInputs.forEach((sourceInput, index) => {
-            const source = sourceInput.value.trim();
-            const translationsText = translationInputs[index]?.value.trim();
+            const source = StringUtils.clean(sourceInput.value);
+            const translationsText = StringUtils.clean(translationInputs[index]?.value);
             
             if (source) {
                 // First, remove all existing pairs for this source word
@@ -436,7 +501,7 @@ export class VocabularyManager {
 
 ${wordPairs.map((pair, index) => `${pair.source} → ${pair.translation}`).join('\n')}
 
-Output only the correct vocabulary list, formatted as "word → translation1, translation2, ...". Each on a separete line.`;
+Output only the correct vocabulary list, in a copyable code block, formatted as "word → translation1, translation2, ...". Each on a separete line.`;
 
         ClipboardUtils.copyText(prompt, 'Vocabulary verification prompt copied to clipboard! Paste it into your AI assistant.');
     }

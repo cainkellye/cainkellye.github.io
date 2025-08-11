@@ -87,7 +87,9 @@ export class ExerciseManager {
         this.uiManager.updateLessonDisplay(exerciseData, progress);
 
         // Update vocabulary box when exercise loads
-        this.vocabularyManager.updateVocabularyBox();
+        if (this.uiManager.vocabularyBoxIsOpen()) {
+            this.vocabularyManager.updateVocabularyBox();
+        }
 
         console.log(`Loaded exercise ${progress.current}/${progress.total} (${currentDirection})`);
     }

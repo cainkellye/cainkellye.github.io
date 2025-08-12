@@ -223,6 +223,17 @@ body {
     background-color: unset;
 }
 
+.grid-add-button {
+    grid-column: span 2;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin: 0px;
+}
+
 button {
     padding: 0.5rem 1rem;
     border: none;

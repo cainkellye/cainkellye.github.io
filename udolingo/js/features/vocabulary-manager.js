@@ -69,11 +69,7 @@ export class VocabularyManager {
         
         for (const word of wordsFromPrompt) {
             const exactTranslations = this.lookupTranslation(word, AppState.promptLang);
-            if (exactTranslations === '---') {
-                console.log(`Skipping striked out word: "${word}"`);
-                // Words is striked out, skip
-                continue;
-            }
+            const strikedOut = exactTranslations === '---';
             let relatedPhrases = this.findRelatedPhrases(word, AppState.promptLang);
             
             if (relatedPhrases.length > 0) {
@@ -83,7 +79,9 @@ export class VocabularyManager {
                     relatedPhrases = phrasesInPrompt;
                 } else {
                     // Add the word itself, as it appears in the prompt
-                    vocabularyEntries.push(word);
+                    if (!strikedOut) {
+                        vocabularyEntries.push(word);
+                    }
 
                     if (exactTranslations || word.length < 3) {
                         // Skip if we have exact translations or if the word is too short
@@ -97,9 +95,11 @@ export class VocabularyManager {
                 }
             } else {
                 // No related phrases found, add the word itself
-                vocabularyEntries.push(word);
+                if (!strikedOut) {
+                    vocabularyEntries.push(word);
+                }
 
-                if (!exactTranslations || exactTranslations.length === 0) {
+                if (strikedOut || !exactTranslations || exactTranslations.length === 0) {
                     // Fetch related entries based on chopped prefix
                     const relatedEntriesByChop = this.findRelatedEntriesByChop(word, AppState.promptLang);
 
@@ -143,6 +143,7 @@ export class VocabularyManager {
         const pairVocab = this.getCurrentLanguagePairVocab();
         const [primaryLang, secondaryLang] = this.getLanguageOrder();
         const relatedPhrases = new Set();
+        word = word.toLowerCase();
         
         // Search for entries that contain the word as a standalone word
         for (const pair of pairVocab) {
@@ -166,30 +167,32 @@ export class VocabularyManager {
         console.log("Removed exact match, remaining related phrases:", relatedPhrases);
         return Array.from(relatedPhrases);
     }
+    
+     containsStandaloneWord(phrase, word) {
+        const len = word.length;
+        phrase = phrase.toLowerCase();
+        let index = phrase.indexOf(word);
 
-    containsStandaloneWord(text, word) {
-        if (text.length < word.length) {
-            // Same length is needed to match different cases
-            return false; // If text is shorter than the word, it can't contain it
+        while (index !== -1) {
+            const before = index === 0 ? '' : phrase[index - 1];
+            const after = index + len >= phrase.length ? '' : phrase[index + len];
+
+            const isBeforeValid = before === '' || !this.isAlpha(before);
+            const isAfterValid = after === '' || !this.isAlpha(after);
+
+            if (isBeforeValid && isAfterValid) {
+                return true;
+            }
+
+            index = phrase.indexOf(word, index + len);
         }
-        // Check if the word appears as a standalone word (not part of another word)
-        // Uses word boundaries to ensure it's not part of another word
-        // original, bad with unicode: const regex = new RegExp(`\\b${word}\\b`, 'iu');
 
-        // Performance critical function, check with console.log
-        // console.log(`Running containsStandaloneWord`);
-
-        // No escaping for now
-        // const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape special regex characters
-        const pattern = `(?<!\\p{L})${word}(?!\\p{L})`;
-        const regex = new RegExp(pattern, 'iu'); // 'u' for unicode support, 'i' for case-insensitive
-
-        return regex.test(text);
+        return false;
     }
 
-    choppedPrefix(str) {
-        const chopLen = Math.max(1, Math.min(4, Math.floor(str.length * 0.3)));
-        return str.slice(0, str.length - chopLen);
+     isAlpha(char) {
+        const code = char.codePointAt(0);
+        return (code >= 65 && code <= 90) || (code >= 97 && code <= 122) || (code >= 192 && code <= 687);
     }
 
     findRelatedEntriesByChop(word, currentLang) {
@@ -206,6 +209,7 @@ export class VocabularyManager {
         for (const pair of pairVocab) {
             const [primaryWord, secondaryWord] = pair;
             const entry = currentLang === primaryLang ? primaryWord : secondaryWord;
+            if (entry.indexOf(' ') !== -1) { continue; } // Skip multi-word phrases
             const translation = currentLang === primaryLang ? secondaryWord : primaryWord;
             if (translation === '---') continue; // Skip striked out words
 
@@ -227,6 +231,12 @@ export class VocabularyManager {
         return Array.from(relatedPhrases);
     }
  
+    choppedPrefix(str) {
+        const len = str.length;
+        const chopLen = Math.floor(len * 0.46);
+        return str.slice(0, len - chopLen);
+    }
+
     updateVocabularyBox() {
         const prompt = AppState.getCurrentPrompt();
         const vocabularyEntries = this.extractVocabularyEntriesFromPrompt(prompt);
@@ -497,11 +507,14 @@ export class VocabularyManager {
         const promptKey = AppState.promptLang === languages[0] ? 'A' : 'B';
         const currentPrompt = currentExercise[promptKey];
 
-        const prompt = `Please correct these ${sourceLang} to ${targetLang} vocabulary translations with regards to "${currentPrompt}":
+        const prompt = `Please correct this list of ${sourceLang} → ${targetLang} vocabulary translations, focusing on the sentence "${currentPrompt}":
 
 ${wordPairs.map((pair, index) => `${pair.source} → ${pair.translation}`).join('\n')}
 
-Output only the correct vocabulary list, in a copyable code block, formatted as "word → translation1, translation2, ...". Each on a separete line.`;
+Only output the correct vocabulary list, in a copyable code block.
+Format as "expression → translation1, translation2, ...", each on a separete line.
+Add phrases, if the word-for-word translation is not accurate.
+You may add or remove lines.`;
 
         ClipboardUtils.copyText(prompt, 'Vocabulary verification prompt copied to clipboard! Paste it into your AI assistant.');
     }

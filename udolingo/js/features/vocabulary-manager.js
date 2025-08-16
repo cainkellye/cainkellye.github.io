@@ -7,6 +7,7 @@ import { AppState } from '../core/state.js';
 import { DOM } from '../core/dom.js';
 import { StringUtils, ArrayUtils, ClipboardUtils } from '../utils/helpers.js';
 import { StorageManager } from '../utils/storage-manager.js';
+import { VocabularyRenderer } from '../utils/vocabulary-renderer.js';
 
 export class VocabularyManager {
     static currentLanguagePairKey = null; // lazy initialization
@@ -219,9 +220,7 @@ export class VocabularyManager {
 
             // Symmetric chopped-prefix match
             if (
-                (entry.startsWith(qPrefix) || word.startsWith(wPrefix)) &&
-                Math.abs(entry.length - word.length) <= 3
-            ) {
+                (entry.startsWith(qPrefix) || word.startsWith(wPrefix))) {
                 relatedPhrases.add(entry);
                 console.log(`Found related entry by chop: "${entry}" for word "${word}"`);
             }
@@ -253,13 +252,16 @@ export class VocabularyManager {
         vocabContainer.innerHTML = '';
 
         // Create vocabulary grid
-        const vocabGrid = DOM.createElement('div', {
-            className: 'vocab-grid'
-        });
+        const vocabGrid = VocabularyRenderer.createVocabularyGrid();
 
         vocabularyEntries.forEach((entry, index) => {
-            const wordRow = this.createVocabularyRow(entry, index);
-            vocabGrid.appendChild(wordRow);
+            const existingTranslation = this.lookupTranslation(entry, AppState.promptLang);
+            VocabularyRenderer.createVocabularyRow(entry, existingTranslation, vocabGrid, index);
+        });
+
+        // Insert the add empty row button
+        VocabularyRenderer.addGridAddButton(vocabGrid, () => {
+            this.addNewVocabularyEntry(vocabGrid);
         });
 
         vocabContainer.appendChild(vocabGrid);
@@ -270,34 +272,24 @@ export class VocabularyManager {
         DOM.setEnabled('verifyWordsBtn', vocabularyEntries.length > 0);
     }
 
-    createVocabularyRow(word, index) {
-        const row = DOM.createElement('div', {
-            className: 'vocab-row'
+    addNewVocabularyEntry(vocabGrid) {
+        if (!vocabGrid) {
+            // Create new grid if none exists
+            vocabGrid = VocabularyRenderer.createVocabularyGrid();
+            vocabContainer.innerHTML = '';
+            vocabContainer.appendChild(vocabGrid);
+        }
+
+        // Add new empty row
+        VocabularyRenderer.createVocabularyRow('', '', vocabGrid);
+        
+        // Re-add the grid add button
+        VocabularyRenderer.addGridAddButton(vocabGrid, () => {
+            this.addNewVocabularyEntry(vocabGrid);
         });
-
-        // Source word (editable)
-        const sourceInput = DOM.createElement('input', {
-            type: 'text',
-            className: 'vocab-source-input',
-            value: word,
-            placeholder: 'word/phrase...',
-            'data-index': index
-        });
-
-        // Translation (editable, with lookup from central vocab)
-        const existingTranslation = this.lookupTranslation(word, AppState.promptLang);
-        const translationInput = DOM.createElement('input', {
-            type: 'text',
-            className: 'vocab-translation-input',
-            value: existingTranslation,
-            placeholder: 'add translation...',
-            'data-index': index
-        });
-
-        row.appendChild(sourceInput);
-        row.appendChild(translationInput);
-
-        return row;
+        
+        // Focus on the new input
+        VocabularyRenderer.focusLastSourceInput(vocabGrid);
     }
 
     async loadVocabularyFromClipboard() {
@@ -325,9 +317,7 @@ export class VocabularyManager {
         vocabContainer.innerHTML = '';
 
         // Create vocabulary grid
-        const vocabGrid = DOM.createElement('div', {
-            className: 'vocab-grid'
-        });
+        const vocabGrid = VocabularyRenderer.createVocabularyGrid();
 
         lines.forEach((line, index) => {
             // Try to split by common separators: tab, |, →, ->, =, :
@@ -345,9 +335,17 @@ export class VocabularyManager {
             }
 
             if (source) {
-                const wordRow = this.createVocabularyRowFromData(source, translation, index);
-                vocabGrid.appendChild(wordRow);
+                // Look up existing translation if not provided
+                if (!translation && AppState.promptLang) {
+                    translation = this.lookupTranslation(source, AppState.promptLang);
+                }
+                VocabularyRenderer.createVocabularyRow(source, translation, vocabGrid, index);
             }
+        });
+
+        // Insert the add empty row button
+        VocabularyRenderer.addGridAddButton(vocabGrid, () => {
+            this.addNewVocabularyEntry(vocabGrid);
         });
 
         vocabContainer.appendChild(vocabGrid);
@@ -357,42 +355,7 @@ export class VocabularyManager {
         DOM.setEnabled('saveWordsBtn', true);
     }
 
-    createVocabularyRowFromData(source, translation, index) {
-        const row = DOM.createElement('div', {
-            className: 'vocab-row'
-        });
-
-        const sourceInput = DOM.createElement('input', {
-            type: 'text',
-            className: 'vocab-source-input',
-            value: source,
-            placeholder: 'word/phrase...',
-            'data-index': index
-        });
-
-        // Look up existing translation if not provided
-        if (!translation && AppState.promptLang) {
-            translation = this.lookupTranslation(source, AppState.promptLang);
-        }
-
-        const translationInput = DOM.createElement('input', {
-            type: 'text',
-            className: 'vocab-translation-input',
-            value: translation,
-            placeholder: 'add translation...',
-            'data-index': index
-        });
-
-        row.appendChild(sourceInput);
-        row.appendChild(translationInput);
-
-        return row;
-    }
-
     saveVocabulary() {
-        const sourceInputs = document.querySelectorAll('.vocab-source-input');
-        const translationInputs = document.querySelectorAll('.vocab-translation-input');
-        
         if (!AppState.config || !AppState.config['langA-B']) {
             alert('No language configuration available.');
             return;
@@ -402,28 +365,26 @@ export class VocabularyManager {
         const sourceLang = AppState.promptLang;
         const targetLang = sourceLang === langA ? langB : langA;
         
+        const entries = VocabularyRenderer.getVocabularyInputs();
         let savedCount = 0;
 
-        sourceInputs.forEach((sourceInput, index) => {
-            const source = StringUtils.clean(sourceInput.value);
-            const translationsText = StringUtils.clean(translationInputs[index]?.value);
+        entries.forEach(entry => {
+            const { source, translation } = entry;
             
-            if (source) {
-                // First, remove all existing pairs for this source word
-                this.removeVocabularyPairsForSourceWord(source, sourceLang);
+            // First, remove all existing pairs for this source word
+            this.removeVocabularyPairsForSourceWord(source, sourceLang);
+            
+            // Then add the new translations (if any)
+            if (translation) {
+                const translations = translation
+                    .split(',')
+                    .map(t => t.trim())
+                    .filter(t => t.length > 0);
                 
-                // Then add the new translations (if any)
-                if (translationsText) {
-                    const translations = translationsText
-                        .split(',')
-                        .map(t => t.trim())
-                        .filter(t => t.length > 0);
-                    
-                    translations.forEach(translation => {
-                        this.saveVocabularyPair(source, sourceLang, translation, targetLang);
-                        savedCount++;
-                    });
-                }
+                translations.forEach(trans => {
+                    this.saveVocabularyPair(source, sourceLang, trans, targetLang);
+                    savedCount++;
+                });
             }
         });
 
@@ -477,24 +438,9 @@ export class VocabularyManager {
     }
 
     generateVerificationPrompt() {
-        const sourceInputs = document.querySelectorAll('.vocab-source-input');
-        const translationInputs = document.querySelectorAll('.vocab-translation-input');
-        
-        const wordPairs = [];
-        
-        sourceInputs.forEach((sourceInput, index) => {
-            const source = sourceInput.value.trim();
-            const translation = translationInputs[index]?.value.trim();
-            
-            if (source) {
-                wordPairs.push({
-                    source: source,
-                    translation: translation || '[missing]'
-                });
-            }
-        });
+        const entries = VocabularyRenderer.getVocabularyInputs();
 
-        if (wordPairs.length === 0) {
+        if (entries.length === 0) {
             alert('No vocabulary words to verify.');
             return;
         }
@@ -509,7 +455,7 @@ export class VocabularyManager {
 
         const prompt = `Please correct this list of ${sourceLang} → ${targetLang} vocabulary translations, focusing on the sentence "${currentPrompt}":
 
-${wordPairs.map((pair, index) => `${pair.source} → ${pair.translation}`).join('\n')}
+${entries.map(entry => `${entry.source} → ${entry.translation || '[missing]'}`).join('\n')}
 
 Only output the correct vocabulary list, in a copyable code block.
 Format as "expression → translation1, translation2, ...", each on a separete line.

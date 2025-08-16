@@ -136,7 +136,9 @@ export class EventManager {
         DOM.addEventListener('vocabBoxHeader', 'click', () => {
             this.uiManager.toggleVocabularyBox();
             // Update the vocabulary box content when it gets opened
-            this.vocabularyManager.updateVocabularyBox();
+            if (this.uiManager.vocabularyBoxIsOpen()) {
+                this.vocabularyManager.updateVocabularyBox();
+            }
         });
 
         // Load vocabulary from clipboard
@@ -147,6 +149,7 @@ export class EventManager {
         // Save vocabulary
         DOM.addEventListener('saveWordsBtn', 'click', () => {
             this.vocabularyManager.saveVocabulary();
+            this.vocabularyManager.updateVocabularyBox();
         });
 
         // Verify vocabulary with LLM

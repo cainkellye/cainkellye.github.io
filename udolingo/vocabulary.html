@@ -59,7 +59,7 @@
                 </div>
                 
                 <div id="vocabulary-container" style="display: none;">
-                    <div id="vocabulary-grid" class="vocab-grid" style="max-height: 62vh; grid-template-columns: 3fr 5fr;">
+                    <div id="vocabulary-grid" class="vocab-grid" style="max-height: 62vh;">
                         <!-- Vocabulary entries will be inserted here -->
                     </div>
                 </div>
@@ -91,6 +91,7 @@
 
     <script type="module">
         import { StorageManager } from './js/utils/storage-manager.js';
+        import { VocabularyRenderer } from './js/utils/vocabulary-renderer.js';
 
         class VocabularyPage {
             constructor() {
@@ -252,7 +253,7 @@
                 container.style.display = 'block';
 
                 // Clear existing content
-                grid.innerHTML = '';
+                VocabularyRenderer.clearGrid(grid);
 
                 // Group entries by source word and combine translations
                 const groupedEntries = this.groupEntriesBySourceWord(entries);
@@ -265,11 +266,13 @@
                 // Create vocabulary rows
                 sortedEntries.forEach(sourceWord => {
                     const translations = groupedEntries[sourceWord];
-                    this.createVocabularyRow(sourceWord, translations.join(', '), grid);
+                    VocabularyRenderer.createVocabularyRow(sourceWord, translations.join(', '), grid);
                 });
 
                 // Add button at the end of the grid to add new entries
-                this.addGridAddButton(grid);
+                VocabularyRenderer.addGridAddButton(grid, () => {
+                    this.addNewEntry();
+                });
 
                 // Update vocabulary info
                 this.updateVocabularyInfo(sortedEntries.length);
@@ -301,25 +304,6 @@
                 return grouped;
             }
 
-            createVocabularyRow(sourceWord, targetWord, container) {
-                // Create source word input (editable)
-                const sourceInput = document.createElement('input');
-                sourceInput.type = 'text';
-                sourceInput.className = 'vocab-source-input';
-                sourceInput.value = sourceWord;
-                sourceInput.placeholder = 'word/phrase...';
-
-                // Create target word input (editable)
-                const targetInput = document.createElement('input');
-                targetInput.type = 'text';
-                targetInput.className = 'vocab-translation-input';
-                targetInput.value = targetWord;
-                targetInput.placeholder = 'add translation...';
-
-                container.appendChild(sourceInput);
-                container.appendChild(targetInput);
-            }
-
             showNoVocabulary() {
                 const container = document.getElementById('vocabulary-container');
                 const noVocabMsg = document.getElementById('no-vocabulary-message');
@@ -342,8 +326,9 @@
                 container.style.display = 'block';
 
                 // Clear existing content and add the add button
-                grid.innerHTML = '';
-                this.addGridAddButton(grid);
+                VocabularyRenderer.clearGrid(grid, () => {
+                    this.addNewEntry();
+                });
                 
                 // Update vocabulary info
                 this.updateVocabularyInfo(0);
@@ -642,10 +627,9 @@
                     return;
                 }
 
-                const sourceInputs = document.querySelectorAll('.vocab-source-input');
-                const translationInputs = document.querySelectorAll('.vocab-translation-input');
+                const entries = VocabularyRenderer.getVocabularyInputs();
                 
-                if (sourceInputs.length === 0) {
+                if (entries.length === 0) {
                     alert('No vocabulary entries to save.');
                     return;
                 }
@@ -663,27 +647,26 @@
                 
                 let savedCount = 0;
 
-                sourceInputs.forEach((sourceInput, index) => {
-                    const source = sourceInput.value.trim();
-                    const translationsText = translationInputs[index]?.value.trim();
+                entries.forEach(entry => {
+                    const { source, translation } = entry;
                     
                     if (source) {
-                        if (translationsText) {
+                        if (translation) {
                             // Split multiple translations by comma
-                            const translations = translationsText
+                            const translations = translation
                                 .split(',')
                                 .map(t => t.trim())
                                 .filter(t => t.length > 0);
                             
-                            translations.forEach(translation => {
+                            translations.forEach(trans => {
                                 // Determine correct order based on current direction and language pair
                                 let primaryWord, secondaryWord;
                                 
                                 if (this.currentDirection === 'normal') {
                                     primaryWord = source;
-                                    secondaryWord = translation;
+                                    secondaryWord = trans;
                                 } else {
-                                    primaryWord = translation;
+                                    primaryWord = trans;
                                     secondaryWord = source;
                                 }
                                 
@@ -716,55 +699,26 @@
                 if (!grid) return;
 
                 const container = document.getElementById('vocabulary-container');
-                const noVocabMsg = document.getElementById('no-vocabulary-message');
                 
                 // If container is hidden, show empty grid first
                 if (container.style.display === 'none') {
                     this.showEmptyVocabularyGrid();
+                    return;
                 }
 
                 // Create a new empty vocabulary row
-                this.createVocabularyRow('', '', grid);
+                VocabularyRenderer.createVocabularyRow('', '', grid);
                 
-                // Re-add the grid add button after the new row
-                this.addGridAddButton(grid);
-                
-                // Focus on the first input of the new row
-                const inputs = grid.querySelectorAll('.vocab-source-input');
-                if (inputs.length > 0) {
-                    // Focus on the last source input (the newly added one, excluding the button)
-                    inputs[inputs.length - 1].focus();
-                }
-
-                // Close sidebar on mobile
-                this.closeSidebarOnMobile();
-            }
-
-            addGridAddButton(grid) {
-                // Remove existing add button if present
-                const existingButton = grid.querySelector('.grid-add-button');
-                if (existingButton) {
-                    existingButton.remove();
-                }
-
-                // Create add button that spans both columns
-                const addButton = document.createElement('button');
-                addButton.className = 'grid-add-button';
-                addButton.textContent = '+ Add New Entry';
-                
-                addButton.addEventListener('click', () => {
+                // Re-add the grid add button
+                VocabularyRenderer.addGridAddButton(grid, () => {
                     this.addNewEntry();
                 });
                 
-                addButton.addEventListener('mouseenter', () => {
-                    addButton.style.backgroundColor = '#45a049';
-                });
-                
-                addButton.addEventListener('mouseleave', () => {
-                    addButton.style.backgroundColor = '#4CAF50';
-                });
+                // Focus on the new input
+                VocabularyRenderer.focusLastSourceInput(grid);
 
-                grid.appendChild(addButton);
+                // Close sidebar on mobile
+                this.closeSidebarOnMobile();
             }
 
             closeSidebarOnMobile() {

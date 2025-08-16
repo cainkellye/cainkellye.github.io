@@ -149,10 +149,6 @@ body {
     transition: background-color 0.2s ease;
 }
 
-#vocab-box-header:hover {
-    background-color: #f9f9f9;
-}
-
 #vocab-box-header h2 {
     margin: 0;
 }
@@ -173,7 +169,7 @@ body {
 
 .vocab-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: 3fr 5fr;
     gap: 0.5rem;
     margin-bottom: 1rem;
     max-height: 22vh;
@@ -182,12 +178,6 @@ body {
     border-radius: 5px;
     padding: 0.75rem;
     background-color: #fafafa;
-}
-
-.vocab-row {
-    display: grid;
-    grid-template-columns: 3fr 5fr;
-    gap: 0.5rem;
 }
 
 .vocab-source-input,

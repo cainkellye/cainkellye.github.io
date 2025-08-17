@@ -13,6 +13,13 @@ export class VocabularyManager {
     static currentLanguagePairKey = null; // lazy initialization
     static currentLanguagePairVocab = null; // lazy initialization
 
+    constructor() {
+        // Allow dependency injection for standalone use
+        this.languagePair = null;
+        this.currentLang = null;
+        this.vocabularyData = null;
+    }
+
     getCentralVocabulary() {
         return StorageManager.getCentralVocabulary() || {};
     }
@@ -29,7 +36,7 @@ export class VocabularyManager {
     }
 
     getLanguageOrder() {
-        return AppState.config['langA-B'].sort();
+        return this.getLanguagePairArray().sort();
     }
 
     getLanguagePairKey() {
@@ -57,6 +64,61 @@ export class VocabularyManager {
         VocabularyManager.currentLanguagePairVocab = decompressed;
     }
 
+    /**
+     * Configure the vocabulary manager for standalone use
+     * @param {string} languagePairKey - Language pair key (e.g., "en:hu")
+     * @param {string} currentLang - Current source language
+     * @param {Array} vocabularyData - Vocabulary data array
+     */
+    configureStandalone(languagePairKey, currentLang, vocabularyData) {
+        this.languagePair = languagePairKey.split(':');
+        this.currentLang = currentLang;
+        this.vocabularyData = vocabularyData;
+        console.log('VocabularyManager configured for standalone mode:', {
+            languagePair: this.languagePair,
+            currentLang: this.currentLang,
+            vocabularyCount: vocabularyData.length
+        });
+    }
+
+    getVocabularyData() {
+        if (this.vocabularyData) {
+            // Standalone mode
+            return this.vocabularyData;
+        }
+        
+        // AppState mode
+        return this.getCurrentLanguagePairVocab();
+    }
+
+    getCurrentLanguage() {
+        if (this.currentLang) {
+            // Standalone mode
+            return this.currentLang;
+        }
+        
+        // AppState mode
+        if (AppState.promptLang) {
+            return AppState.promptLang;
+        }
+        
+        throw new Error('No current language available. Either configure standalone mode or ensure AppState.promptLang is set.');
+    }
+
+    getLanguagePairArray() {
+        if (this.languagePair) {
+            // Standalone mode
+            return this.languagePair;
+        }
+        
+        // AppState mode
+        if (AppState.config && AppState.config['langA-B']) {
+            return AppState.config['langA-B'];
+        }
+        
+        throw new Error('No language pair available. Either configure standalone mode or ensure AppState.config is set.');
+    }
+
     extractWordsFromPrompt(prompt) {
         if (!prompt) return [];
 
@@ -67,11 +129,12 @@ export class VocabularyManager {
     extractVocabularyEntriesFromPrompt(prompt) {
         const wordsFromPrompt = this.extractWordsFromPrompt(prompt);
         const vocabularyEntries = [];
+        const currentLang = this.getCurrentLanguage();
         
         for (const word of wordsFromPrompt) {
-            const exactTranslations = this.lookupTranslation(word, AppState.promptLang);
+            const exactTranslations = this.lookupTranslation(word, currentLang);
             const strikedOut = exactTranslations === '---';
-            let relatedPhrases = this.findRelatedPhrases(word, AppState.promptLang);
+            let relatedPhrases = this.findRelatedPhrases(word, currentLang);
             
             if (relatedPhrases.length > 0) {
                 const phrasesInPrompt = relatedPhrases.filter(phrase => prompt.toLowerCase().includes(phrase.toLowerCase()));
@@ -102,7 +165,7 @@ export class VocabularyManager {
 
                 if (strikedOut || !exactTranslations || exactTranslations.length === 0) {
                     // Fetch related entries based on chopped prefix
-                    const relatedEntriesByChop = this.findRelatedEntriesByChop(word, AppState.promptLang);
+                    const relatedEntriesByChop = this.findRelatedEntriesByChop(word, currentLang);
 
                     // Add all related entries
                     for (const relatedEntry of relatedEntriesByChop) {
@@ -116,7 +179,7 @@ export class VocabularyManager {
     }
 
     lookupTranslation(word, currentLang) {
-        const pairVocab = this.getCurrentLanguagePairVocab();
+        const pairVocab = this.getVocabularyData();
         const normalizedWord = word.toLowerCase();
         const [primaryLang, secondaryLang] = this.getLanguageOrder();
         const foundTranslations = new Set();
@@ -141,7 +204,7 @@ export class VocabularyManager {
     }
 
     findRelatedPhrases(word, currentLang) {
-        const pairVocab = this.getCurrentLanguagePairVocab();
+        const pairVocab = this.getVocabularyData();
         const [primaryLang, secondaryLang] = this.getLanguageOrder();
         const relatedPhrases = new Set();
         word = word.toLowerCase();
@@ -201,7 +264,7 @@ export class VocabularyManager {
             // Skip very short words, as they are unlikely to have related phrases
             return [];
         }
-        const pairVocab = this.getCurrentLanguagePairVocab();
+        const pairVocab = this.getVocabularyData();
         const [primaryLang, secondaryLang] = this.getLanguageOrder();
         const relatedPhrases = new Set();
 

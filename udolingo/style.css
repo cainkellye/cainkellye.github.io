@@ -223,6 +223,31 @@ body {
     margin: 0px;
 }
 
+#phrase-filter {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 0.7rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+#phrase-filter:focus {
+    outline: none;
+    border-color: #008CBA;
+    box-shadow: 0 0 3px rgba(0, 140, 186, 0.3);
+}
+
+.no-results {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+    font-style: italic;
+    grid-column: 2 span;
+}
+
 button {
     padding: 0.5rem 1rem;
     border: none;

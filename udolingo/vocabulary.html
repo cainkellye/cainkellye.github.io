@@ -46,7 +46,7 @@
         <div class="main-content">
             <div class="container" style="max-width: 60rem;">
                 <div id="lesson-header">
-                    <img alt="mascot" src="images/udo-reading.png" width="120" height="84" />
+                    <img alt="mascot" src="images/udo-reading.png" width="120" height="84" style="margin: 5px 0px 0px 6px;" />
                     <h2 id="vocabulary-title" class="main-title">Vocabulary Manager</h2>
                 </div>
                 
@@ -59,6 +59,7 @@
                 </div>
                 
                 <div id="vocabulary-container" style="display: none;">
+                    <input id="phrase-filter" placeholder="Enter words, phrases or a sentence to filter vocabulary..." />
                     <div id="vocabulary-grid" class="vocab-grid" style="max-height: 62vh;">
                         <!-- Vocabulary entries will be inserted here -->
                     </div>
@@ -92,12 +93,17 @@
     <script type="module">
         import { StorageManager } from './js/utils/storage-manager.js';
         import { VocabularyRenderer } from './js/utils/vocabulary-renderer.js';
+        import { VocabularyManager } from './js/features/vocabulary-manager.js';
+        import { StringUtils, ArrayUtils } from './js/utils/helpers.js';
 
         class VocabularyPage {
             constructor() {
                 this.currentLanguagePair = null;
                 this.currentDirection = 'normal'; // 'normal' or 'reverse'
                 this.vocabularyData = {};
+                this.allVocabularyEntries = []; // Store all entries for filtering
+                this.vocabularyManager = new VocabularyManager();
+                this.filterTimeout = null; // For debouncing filter updates
                 this.init();
             }
 
@@ -208,6 +214,19 @@
                 document.getElementById('cancel-import-btn').addEventListener('click', () => {
                     this.hideImportModal();
                 });
+
+                // Phrase filter input with debouncing
+                const filterInput = document.getElementById('phrase-filter');
+                if (filterInput) {
+                    filterInput.addEventListener('input', (e) => {
+                        this.debouncedFilterVocabulary(e.target.value);
+                    });
+                    
+                    // Also add keyup as backup
+                    filterInput.addEventListener('keyup', (e) => {
+                        this.debouncedFilterVocabulary(e.target.value);
+                    });
+                }
             }
 
             selectLanguagePair(pairKey) {
@@ -233,7 +252,147 @@
                 }
 
                 const vocabularyEntries = StorageManager.decompressData(compressedData) || [];
+                this.allVocabularyEntries = vocabularyEntries; // Store all entries for filtering
                 this.displayVocabulary(vocabularyEntries);
+
+                // Clear filter when loading new vocabulary and cancel any pending filter
+                const filterInput = document.getElementById('phrase-filter');
+                if (filterInput) {
+                    filterInput.value = '';
+                }
+                
+                // Cancel any pending filter timeout
+                if (this.filterTimeout) {
+                    clearTimeout(this.filterTimeout);
+                    this.filterTimeout = null;
+                }
+            }
+
+            /**
+             * Debounced version of filterVocabulary - waits 1 second before filtering to reduce CPU strain
+             */
+            debouncedFilterVocabulary(filterText) {
+                // Clear any existing timeout
+                if (this.filterTimeout) {
+                    clearTimeout(this.filterTimeout);
+                }
+
+                // If filter is empty, apply immediately (no need to wait)
+                if (!filterText.trim()) {
+                    this.hideFilterPending();
+                    this.filterVocabulary(filterText);
+                    return;
+                }
+
+                // Add visual feedback that filtering is pending
+                this.showFilterPending();
+
+                // Set new timeout
+                this.filterTimeout = setTimeout(() => {
+                    this.filterVocabulary(filterText);
+                    this.hideFilterPending();
+                    this.filterTimeout = null;
+                }, 1000); // Back to 1 second for production use
+            }
+
+            /**
+             * Shows visual feedback that filter is pending
+             */
+            showFilterPending() {
+                const filterInput = document.getElementById('phrase-filter');
+                if (filterInput) {
+                    filterInput.style.borderColor = '#ffa500';
+                    filterInput.style.backgroundColor = '#fff8e1';
+                }
+            }
+
+            /**
+             * Hides visual feedback for pending filter
+             */
+            hideFilterPending() {
+                const filterInput = document.getElementById('phrase-filter');
+                if (filterInput) {
+                    filterInput.style.borderColor = '#ddd';
+                    filterInput.style.backgroundColor = 'white';
+                }
+            }
+
+            filterVocabulary(filterText) {
+                if (!this.currentLanguagePair || !this.allVocabularyEntries) {
+                    return;
+                }
+
+                if (!filterText.trim()) {
+                    // Show all entries if filter is empty
+                    this.displayVocabulary(this.allVocabularyEntries);
+                    return;
+                }
+
+                try {
+                    // First try a simple text-based filter as fallback
+                    const simpleFilteredEntries = this.allVocabularyEntries.filter(entry => {
+                        if (!Array.isArray(entry) || entry.length !== 2) return false;
+                        
+                        const [primary, secondary] = entry;
+                        const sourceWord = this.currentDirection === 'normal' ? primary : secondary;
+                        
+                        // Simple contains check
+                        return sourceWord.toLowerCase().includes(filterText.toLowerCase());
+                    });
+
+                    // Try the complex vocabulary extraction logic
+                    let relevantWords = [];
+                    try {
+                        // Set up the vocabulary manager for filtering
+                        this.setupVocabularyManagerForFiltering();
+
+                        // Use the same logic as extractVocabularyEntriesFromPrompt
+                        relevantWords = this.vocabularyManager.extractVocabularyEntriesFromPrompt(filterText);
+                    } catch (error) {
+                        console.error('Error in vocabulary extraction:', error);
+                        // Use simple filter if complex logic fails
+                        this.displayVocabulary(simpleFilteredEntries);
+                        return;
+                    }
+
+                    // If we have relevant words from vocabulary extraction, use those
+                    if (relevantWords.length > 0) {
+                        // Filter the vocabulary entries to show only those that match the relevant words
+                        const filteredEntries = this.allVocabularyEntries.filter(entry => {
+                            if (!Array.isArray(entry) || entry.length !== 2) return false;
+                            
+                            const [primary, secondary] = entry;
+                            const sourceWord = this.currentDirection === 'normal' ? primary : secondary;
+                            
+                            // Check if this entry's source word is in the relevant words list
+                            return relevantWords.some(relevantWord => 
+                                sourceWord.toLowerCase() === relevantWord.toLowerCase()
+                            );
+                        });
+
+                        this.displayVocabulary(filteredEntries);
+                    } else {
+                        // If no relevant words found from extraction, use simple filter
+                        this.displayVocabulary(simpleFilteredEntries);
+                    }
+                } catch (error) {
+                    console.error('Error in filterVocabulary:', error);
+                    // Fallback to showing all entries if there's an error
+                    this.displayVocabulary(this.allVocabularyEntries);
+                }
+            }
+
+            setupVocabularyManagerForFiltering() {
+                // Set up the vocabulary manager to work with current language pair and direction
+                const [lang1, lang2] = this.currentLanguagePair.split(':');
+                const sourceLang = this.currentDirection === 'normal' ? lang1 : lang2;
+
+                // Configure the vocabulary manager for standalone use
+                this.vocabularyManager.configureStandalone(
+                    this.currentLanguagePair,
+                    sourceLang,
+                    this.allVocabularyEntries
+                );
             }
 
             displayVocabulary(entries) {
@@ -243,7 +402,27 @@
                 const description = document.getElementById('vocabulary-description');
 
                 if (!entries || entries.length === 0) {
-                    this.showNoVocabulary();
+                    // Check if we have a filter applied
+                    const filterInput = document.getElementById('phrase-filter');
+                    const hasFilter = filterInput && filterInput.value.trim();
+                    
+                    if (hasFilter) {
+                        // Show message for no matching filter results
+                        description.style.display = 'none';
+                        noVocabMsg.style.display = 'none';
+                        container.style.display = 'block';
+                        
+                        // Clear grid and show no results message
+                        VocabularyRenderer.clearGrid(grid);
+                        const noResultsDiv = document.createElement('div');
+                        noResultsDiv.classList.add('no-results');
+                        noResultsDiv.innerHTML = '<p>No vocabulary entries match the current filter.</p>';
+                        grid.appendChild(noResultsDiv);
+                        
+                        this.updateVocabularyInfo(0);
+                    } else {
+                        this.showNoVocabulary();
+                    }
                     return;
                 }
 
@@ -379,7 +558,18 @@
                 
                 const description = document.getElementById('vocabulary-description');
                 description.style.display = 'block';
-                description.innerHTML = `<strong>${count} entries</strong>`;
+                
+                // Check if we have a filter applied
+                const filterInput = document.getElementById('phrase-filter');
+                const hasFilter = filterInput && filterInput.value.trim();
+                const totalEntries = this.allVocabularyEntries ? this.groupEntriesBySourceWord(this.allVocabularyEntries) : {};
+                const totalCount = Object.keys(totalEntries).length;
+                
+                if (hasFilter && count < totalCount) {
+                    description.innerHTML = `<strong>${count} of ${totalCount} entries</strong> (filtered)`;
+                } else {
+                    description.innerHTML = `<strong>${count} entries</strong>`;
+                }
                 
                 const title = document.getElementById('vocabulary-title');
                 title.innerHTML = `${sourceLang.charAt(0).toUpperCase() + sourceLang.slice(1)} → ${targetLang.charAt(0).toUpperCase() + targetLang.slice(1)} Vocabulary`
@@ -387,6 +577,13 @@
 
             switchDirection() {
                 if (!this.currentLanguagePair) return;
+                
+                // Cancel any pending filter timeout since we're changing direction
+                if (this.filterTimeout) {
+                    clearTimeout(this.filterTimeout);
+                    this.filterTimeout = null;
+                    this.hideFilterPending();
+                }
                 
                 this.currentDirection = this.currentDirection === 'normal' ? 'reverse' : 'normal';
                 this.loadLanguagePairVocabulary();

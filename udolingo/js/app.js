@@ -11,7 +11,7 @@ import { UIManager } from './managers/ui-manager.js';
 import { SidebarManager } from './managers/sidebar-manager.js';
 import { ConfigManager } from './managers/config-manager.js';
 import { EventManager } from './managers/event-manager.js';
-import { VocabularyManager } from './features/vocabulary-manager.js';
+import { VocabularyBox } from './features/vocabulary-box.js';
 import { URLHandler } from './utils/url-handler.js';
 import { StorageManager } from './utils/storage-manager.js';
 import { LLMPromptGenerator } from './features/llm-prompt-generator.js';

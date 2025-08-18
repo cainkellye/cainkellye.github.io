@@ -10,7 +10,7 @@ import { ConfigManager } from './config-manager.js';
 import { ExerciseManager } from '../features/exercise-manager.js';
 import { DirectionManager } from '../features/direction-manager.js';
 import { AnswerValidator } from '../features/answer-validator.js';
-import { VocabularyManager } from '../features/vocabulary-manager.js';
+import { VocabularyBox } from '../features/vocabulary-box.js';
 import { TranslationManager } from '../features/translation-manager.js';
 import { MistakesManager } from '../features/mistakes-manager.js';
 import { LLMPromptGenerator } from '../features/llm-prompt-generator.js';
@@ -23,7 +23,7 @@ export class EventManager {
         this.exerciseManager = new ExerciseManager();
         this.directionManager = new DirectionManager();
         this.answerValidator = new AnswerValidator();
-        this.vocabularyManager = new VocabularyManager();
+        this.vocabularyBox = new VocabularyBox();
         this.translationManager = new TranslationManager();
         this.mistakesManager = new MistakesManager();
         this.llmGenerator = new LLMPromptGenerator();
@@ -116,14 +116,14 @@ export class EventManager {
         DOM.addEventListener('vocab1', 'click', () => {
             if (AppState.config && AppState.config['langA-B']) {
                 const [langA, langB] = AppState.config['langA-B'];
-                this.vocabularyManager.openVocabularyTranslation(langA, langB);
+                this.vocabularyBox.openVocabularyTranslation(langA, langB);
             }
         });
 
         DOM.addEventListener('vocab2', 'click', () => {
             if (AppState.config && AppState.config['langA-B']) {
                 const [langA, langB] = AppState.config['langA-B'];
-                this.vocabularyManager.openVocabularyTranslation(langB, langA);
+                this.vocabularyBox.openVocabularyTranslation(langB, langA);
             }
         });
     }
@@ -137,24 +137,24 @@ export class EventManager {
             this.uiManager.toggleVocabularyBox();
             // Update the vocabulary box content when it gets opened
             if (this.uiManager.vocabularyBoxIsOpen()) {
-                this.vocabularyManager.updateVocabularyBox();
+                this.vocabularyBox.updateVocabularyBox();
             }
         });
 
         // Load vocabulary from clipboard
         DOM.addEventListener('wordsFromClipboardBtn', 'click', () => {
-            this.vocabularyManager.loadVocabularyFromClipboard();
+            this.vocabularyBox.loadVocabularyFromClipboard();
         });
 
         // Save vocabulary
         DOM.addEventListener('saveWordsBtn', 'click', () => {
-            this.vocabularyManager.saveVocabulary();
-            this.vocabularyManager.updateVocabularyBox();
+            this.vocabularyBox.saveVocabulary();
+            this.vocabularyBox.updateVocabularyBox();
         });
 
         // Verify vocabulary with LLM
         DOM.addEventListener('verifyWordsBtn', 'click', () => {
-            this.vocabularyManager.generateVerificationPrompt();
+            this.vocabularyBox.generateVerificationPrompt();
         });
     }
 

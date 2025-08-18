@@ -1,553 +1,951 @@
 ﻿/**
  * Vocabulary Manager
- * Handles vocabulary extraction, central vocabulary storage, and translation links
+ * Handles the standalone vocabulary manager page functionality
  */
 
-import { AppState } from '../core/state.js';
-import { DOM } from '../core/dom.js';
-import { StringUtils, ArrayUtils, ClipboardUtils } from '../utils/helpers.js';
 import { StorageManager } from '../utils/storage-manager.js';
 import { VocabularyRenderer } from '../utils/vocabulary-renderer.js';
+import { VocabularyStorage } from './vocabulary-storage.js';
+import { StringUtils, ArrayUtils } from '../utils/helpers.js';
 
 export class VocabularyManager {
-    static currentLanguagePairKey = null; // lazy initialization
-    static currentLanguagePairVocab = null; // lazy initialization
-
     constructor() {
-        // Allow dependency injection for standalone use
-        this.languagePair = null;
-        this.currentLang = null;
-        this.vocabularyData = null;
+        this.currentLanguagePair = null;
+        this.currentDirection = 'normal'; // 'normal' or 'reverse'
+        this.vocabularyData = {};
+        this.allVocabularyEntries = []; // Store all entries for filtering
+        this.vocabularyStorage = new VocabularyStorage();
+        this.filterTimeout = null; // For debouncing filter updates
     }
 
-    getCentralVocabulary() {
-        return StorageManager.getCentralVocabulary() || {};
+    init() {
+        this.loadVocabularyData();
+        this.populateLanguagePairs();
+        this.autoSelectLanguagePair(); // New: auto-select language pair
+        this.setupEventListeners();
+        this.setupMobileResponsive();
     }
 
-    saveCurrentLanguagePairVocab() {
-        if (!VocabularyManager.currentLanguagePairKey || !VocabularyManager.currentLanguagePairVocab) {
-            console.error('Current language pair key or current vocabulary not initialized');
-            return;
+    autoSelectLanguagePair() {
+        const pairs = Object.keys(this.vocabularyData);
+        if (pairs.length === 0) return;
+
+        let targetPairKey = null;
+        let targetDirection = 'normal';
+
+        // Try to get current exercise language pair from the main app
+        try {
+            // Check if we can access parent window (if opened from main app)
+            if (window.opener && window.opener.udolingoApp) {
+                const parentApp = window.opener.udolingoApp;
+                if (parentApp.state && parentApp.state.config && parentApp.state.config['langA-B']) {
+                    const [langA, langB] = parentApp.state.config['langA-B'];
+                    const sortedLangs = [langA.toLowerCase(), langB.toLowerCase()].sort();
+                    const exercisePairKey = sortedLangs.join(':');
+                    
+                    if (this.vocabularyData[exercisePairKey]) {
+                        targetPairKey = exercisePairKey;
+                        
+                        // Determine direction based on current prompt language
+                        if (parentApp.state.promptLang) {
+                            const [lang1, lang2] = targetPairKey.split(':');
+                            targetDirection = (lang1 === parentApp.state.promptLang.toLowerCase()) ? 'normal' : 'reverse';
+                        }
+                        
+                        console.log(`Auto-selected language pair from current exercise: ${targetPairKey} (${targetDirection})`);
+                    }
+                }
+            }
+        } catch (error) {
+            console.log('Could not access parent app state:', error.message);
         }
-        const centralVocab = this.getCentralVocabulary();
-        const compressedLanguagePairVocab = StorageManager.compressData(VocabularyManager.currentLanguagePairVocab);
-        centralVocab[VocabularyManager.currentLanguagePairKey] = compressedLanguagePairVocab;
-        StorageManager.setCentralVocabulary(centralVocab);
-    }
 
-    getLanguageOrder() {
-        return this.getLanguagePairArray().sort();
-    }
-
-    getLanguagePairKey() {
-        // Create consistent key regardless of lesson order (alphabetical)
-        return this.getLanguageOrder().join(':').toLowerCase();
-    }
-
-    getCurrentLanguagePairVocab() {
-        const pairKey = this.getLanguagePairKey();
-        if (VocabularyManager.currentLanguagePairKey !== pairKey) {
-            this._updateCurrentLanguagePairVocab(pairKey);
+        // Fallback: select the first available language pair
+        if (!targetPairKey) {
+            targetPairKey = pairs[0];
+            console.log(`Auto-selected first available language pair: ${targetPairKey}`);
         }
-        return VocabularyManager.currentLanguagePairVocab;
-    }
 
-    _updateCurrentLanguagePairVocab(pairKey) {
-        console.log(`Updating current language pair vocabulary for key: ${pairKey}`);
-        VocabularyManager.currentLanguagePairKey = pairKey;
-        const centralVocab = this.getCentralVocabulary();
-        if (!centralVocab[pairKey]) {
-            centralVocab[pairKey] = [];
+        // Set the dropdown value and load the vocabulary
+        const select = document.getElementById('language-pair-select');
+        if (select) {
+            select.value = targetPairKey;
+            this.currentLanguagePair = targetPairKey;
+            this.currentDirection = targetDirection;
+            this.loadLanguagePairVocabulary();
+            this.updateUI();
+            this.updateFilterPlaceholder(); // Update placeholder text
         }
-        const decompressed = StorageManager.decompressData(centralVocab[pairKey]);
-        console.log(`Loaded ${decompressed.length} entries for language pair: ${pairKey}`);
-        VocabularyManager.currentLanguagePairVocab = decompressed;
     }
 
-    /**
-     * Configure the vocabulary manager for standalone use
-     * @param {string} languagePairKey - Language pair key (e.g., "en:hu")
-     * @param {string} currentLang - Current source language
-     * @param {Array} vocabularyData - Vocabulary data array
-     */
-    configureStandalone(languagePairKey, currentLang, vocabularyData) {
-        this.languagePair = languagePairKey.split(':');
-        this.currentLang = currentLang;
-        this.vocabularyData = vocabularyData;
-        console.log('VocabularyManager configured for standalone mode:', {
-            languagePair: this.languagePair,
-            currentLang: this.currentLang,
-            vocabularyCount: vocabularyData.length
+    setupMobileResponsive() {
+        // Handle sidebar toggle for mobile
+        document.getElementById('sidebar-header').addEventListener('click', () => {
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.getElementById('sidebar-toggle');
+            const content = document.getElementById('sidebar-content');
+            
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle('collapsed');
+                
+                if (sidebar.classList.contains('collapsed')) {
+                    content.style.display = 'none';
+                    toggle.style.transform = 'rotate(-90deg)';
+                } else {
+                    content.style.display = 'block';
+                    toggle.style.transform = 'rotate(0deg)';
+                }
+            }
         });
     }
 
-    getVocabularyData() {
-        if (this.vocabularyData) {
-            // Standalone mode
-            return this.vocabularyData;
-        }
+    loadVocabularyData() {
+        this.vocabularyData = StorageManager.getCentralVocabulary() || {};
+        console.log('Loaded vocabulary data:', this.vocabularyData);
+    }
+
+    populateLanguagePairs() {
+        const select = document.getElementById('language-pair-select');
+        const pairs = Object.keys(this.vocabularyData);
         
-        // AppState mode
-        return this.getCurrentLanguagePairVocab();
-    }
-
-    getCurrentLanguage() {
-        if (this.currentLang) {
-            // Standalone mode
-            return this.currentLang;
-        }
+        // Clear existing options
+        select.innerHTML = '';
         
-        // AppState mode
-        if (AppState.promptLang) {
-            return AppState.promptLang;
-        }
-        
-        throw new Error('No current language available. Either configure standalone mode or ensure AppState.promptLang is set.');
-    }
-
-    getLanguagePairArray() {
-        if (this.languagePair) {
-            // Standalone mode
-            return this.languagePair;
-        }
-        
-        // AppState mode
-        if (AppState.config && AppState.config['langA-B']) {
-            return AppState.config['langA-B'];
-        }
-        
-        throw new Error('No language pair available. Either configure standalone mode or ensure AppState.config is set.');
-    }
-
-    extractWordsFromPrompt(prompt) {
-        if (!prompt) return [];
-
-        const words = ArrayUtils.removeDuplicates(StringUtils.splitSentenceClean(prompt))
-        return words;
-    }
-
-    extractVocabularyEntriesFromPrompt(prompt) {
-        const wordsFromPrompt = this.extractWordsFromPrompt(prompt);
-        const vocabularyEntries = [];
-        const currentLang = this.getCurrentLanguage();
-        
-        for (const word of wordsFromPrompt) {
-            const exactTranslations = this.lookupTranslation(word, currentLang);
-            const strikedOut = exactTranslations === '---';
-            let relatedPhrases = this.findRelatedPhrases(word, currentLang);
-            
-            if (relatedPhrases.length > 0) {
-                const phrasesInPrompt = relatedPhrases.filter(phrase => prompt.toLowerCase().includes(phrase.toLowerCase()));
-                if (phrasesInPrompt.length > 0) {
-                    // If some related phrases are in the prompt, filter to only those
-                    relatedPhrases = phrasesInPrompt;
-                } else {
-                    // Add the word itself, as it appears in the prompt
-                    if (!strikedOut) {
-                        vocabularyEntries.push(word);
-                    }
-
-                    if (exactTranslations || word.length < 3) {
-                        // Skip if we have exact translations or if the word is too short
-                        continue;
-                    }
-                } 
-
-                // Add all related phrases as separate entries
-                for (const phrase of relatedPhrases) {
-                    vocabularyEntries.push(phrase);
-                }
-            } else {
-                // No related phrases found, add the word itself
-                if (!strikedOut) {
-                    vocabularyEntries.push(word);
-                }
-
-                if (strikedOut || !exactTranslations || exactTranslations.length === 0) {
-                    // Fetch related entries based on chopped prefix
-                    const relatedEntriesByChop = this.findRelatedEntriesByChop(word, currentLang);
-
-                    // Add all related entries
-                    for (const relatedEntry of relatedEntriesByChop) {
-                        vocabularyEntries.push(relatedEntry);
-                    }
-                }
-            }
-        }
-
-        return ArrayUtils.removeDuplicates(vocabularyEntries);
-    }
-
-    lookupTranslation(word, currentLang) {
-        const pairVocab = this.getVocabularyData();
-        const normalizedWord = word.toLowerCase();
-        const [primaryLang, secondaryLang] = this.getLanguageOrder();
-        const foundTranslations = new Set();
-        
-        // Search through the vocabulary array for exact matches
-        for (const pair of pairVocab) {
-            if (!Array.isArray(pair) || pair.length !== 2) continue;
-            
-            const [primaryWord, secondaryWord] = pair;
-            
-            // Check if current word matches either position
-            if (currentLang === primaryLang && primaryWord.toLowerCase() === normalizedWord) {
-                if (secondaryWord === '---') return '---'; // Striked out word
-                foundTranslations.add(secondaryWord);
-            } else if (currentLang === secondaryLang && secondaryWord.toLowerCase() === normalizedWord) {
-                if (primaryWord === '---') return '---'; // Striked out word
-                foundTranslations.add(primaryWord);
-            }
-        }
-        
-        return foundTranslations.size > 0 ? Array.from(foundTranslations).join(', ') : '';
-    }
-
-    findRelatedPhrases(word, currentLang) {
-        const pairVocab = this.getVocabularyData();
-        const [primaryLang, secondaryLang] = this.getLanguageOrder();
-        const relatedPhrases = new Set();
-        word = word.toLowerCase();
-        
-        // Search for entries that contain the word as a standalone word
-        for (const pair of pairVocab) {
-            const [primaryWord, secondaryWord] = pair;
-            
-            // Check if the word is contained in a larger phrase in the source language
-            const entry = currentLang === primaryLang ? primaryWord : secondaryWord;
-            const translation = currentLang === primaryLang ? secondaryWord : primaryWord;
-            if (translation === '---') continue; // Skip striked out words
-
-            if (this.containsStandaloneWord(entry, word)) {
-                relatedPhrases.add(entry);
-                console.log(`Found related phrase: "${entry}" for word "${word}"`);
-            }
-        }
-
-        // TODO return translations too, as we already have them
-
-        console.log("Related phrases found:", relatedPhrases);
-        relatedPhrases.delete(word); // Remove the exact word itself if present
-        console.log("Removed exact match, remaining related phrases:", relatedPhrases);
-        return Array.from(relatedPhrases);
-    }
-    
-     containsStandaloneWord(phrase, word) {
-        const len = word.length;
-        phrase = phrase.toLowerCase();
-        let index = phrase.indexOf(word);
-
-        while (index !== -1) {
-            const before = index === 0 ? '' : phrase[index - 1];
-            const after = index + len >= phrase.length ? '' : phrase[index + len];
-
-            const isBeforeValid = before === '' || !this.isAlpha(before);
-            const isAfterValid = after === '' || !this.isAlpha(after);
-
-            if (isBeforeValid && isAfterValid) {
-                return true;
-            }
-
-            index = phrase.indexOf(word, index + len);
-        }
-
-        return false;
-    }
-
-     isAlpha(char) {
-        const code = char.codePointAt(0);
-        return (code >= 65 && code <= 90) || (code >= 97 && code <= 122) || (code >= 192 && code <= 687);
-    }
-
-    findRelatedEntriesByChop(word, currentLang) {
-        if (word.length < 4) {
-            // Skip very short words, as they are unlikely to have related phrases
-            return [];
-        }
-        const pairVocab = this.getVocabularyData();
-        const [primaryLang, secondaryLang] = this.getLanguageOrder();
-        const relatedPhrases = new Set();
-
-        const qPrefix = word.length > 5 ? this.choppedPrefix(word) : word;
-
-        for (const pair of pairVocab) {
-            const [primaryWord, secondaryWord] = pair;
-            const entry = currentLang === primaryLang ? primaryWord : secondaryWord;
-            if (entry.indexOf(' ') !== -1) { continue; } // Skip multi-word phrases
-            const translation = currentLang === primaryLang ? secondaryWord : primaryWord;
-            if (translation === '---') continue; // Skip striked out words
-
-            if (typeof entry !== "string") continue;
-
-            const wPrefix = entry.length > 5 ? this.choppedPrefix(entry) : entry;
-
-            // Symmetric chopped-prefix match
-            if (
-                (entry.startsWith(qPrefix) || word.startsWith(wPrefix))) {
-                relatedPhrases.add(entry);
-                console.log(`Found related entry by chop: "${entry}" for word "${word}"`);
-            }
-        }
-
-        relatedPhrases.delete(word); // Remove exact match
-        return Array.from(relatedPhrases);
-    }
- 
-    choppedPrefix(str) {
-        const len = str.length;
-        const chopLen = Math.floor(len * 0.46);
-        return str.slice(0, len - chopLen);
-    }
-
-    updateVocabularyBox() {
-        const prompt = AppState.getCurrentPrompt();
-        const vocabularyEntries = this.extractVocabularyEntriesFromPrompt(prompt);
-        const vocabContainer = DOM.elements.vocabContainer;
-        
-        if (!vocabContainer || vocabularyEntries.length === 0) {
-            if (vocabContainer) {
-                vocabContainer.innerHTML = '<p>No vocabulary words found in current exercise.</p>';
-            }
+        if (pairs.length === 0) {
+            select.innerHTML = '<option value="">No vocabulary pairs available</option>';
             return;
         }
+        
+        // Add default option
+        select.innerHTML = '<option value="">Select a language pair...</option>';
+        
+        // Add language pairs
+        pairs.forEach(pairKey => {
+            const [lang1, lang2] = pairKey.split(':');
+            const displayName = `${lang1.charAt(0).toUpperCase() + lang1.slice(1)} ↔ ${lang2.charAt(0).toUpperCase() + lang2.slice(1)}`;
+            const option = document.createElement('option');
+            option.value = pairKey;
+            option.textContent = displayName;
+            select.appendChild(option);
+        });
+    }
+
+    setupEventListeners() {
+        // Language pair selection
+        document.getElementById('language-pair-select').addEventListener('change', (e) => {
+            this.selectLanguagePair(e.target.value);
+            this.closeSidebarOnMobile();
+        });
+
+        // Switch direction button
+        document.getElementById('switch-direction-btn').addEventListener('click', () => {
+            this.switchDirection();
+            this.closeSidebarOnMobile();
+        });
+
+        // Add new entry button
+        document.getElementById('add-entry-btn').addEventListener('click', () => {
+            this.addNewEntry();
+        });
+
+        // Save changes button
+        document.getElementById('save-changes-btn').addEventListener('click', () => {
+            this.saveVocabularyChanges();
+            this.closeSidebarOnMobile();
+        });
+
+        // Save changes main button
+        document.getElementById('save-changes-main-btn').addEventListener('click', () => {
+            this.saveVocabularyChanges();
+            this.closeSidebarOnMobile();
+        });
+
+        // Export button
+        document.getElementById('export-vocab-btn').addEventListener('click', () => {
+            this.exportVocabulary();
+            this.closeSidebarOnMobile();
+        });
+
+        // Import button
+        document.getElementById('import-vocab-btn').addEventListener('click', () => {
+            document.getElementById('import-file-input').click();
+        });
+
+        // File input
+        document.getElementById('import-file-input').addEventListener('change', (e) => {
+            this.handleFileImport(e);
+        });
+
+        // Import modal buttons
+        document.getElementById('confirm-import-btn').addEventListener('click', () => {
+            this.confirmImport();
+        });
+
+        document.getElementById('cancel-import-btn').addEventListener('click', () => {
+            this.hideImportModal();
+        });
+
+        // Phrase filter input with debouncing
+        const filterInput = document.getElementById('phrase-filter');
+        if (filterInput) {
+            filterInput.addEventListener('input', (e) => {
+                this.debouncedFilterVocabulary(e.target.value);
+            });
+        }
+    }
+
+    selectLanguagePair(pairKey) {
+        if (!pairKey) {
+            this.currentLanguagePair = null;
+            this.hideVocabulary();
+            return;
+        }
+
+        this.currentLanguagePair = pairKey;
+        this.currentDirection = 'normal';
+        this.loadLanguagePairVocabulary();
+        this.updateUI();
+    }
+
+    loadLanguagePairVocabulary() {
+        if (!this.currentLanguagePair) return;
+
+        const compressedData = this.vocabularyData[this.currentLanguagePair];
+        if (!compressedData) {
+            this.showNoVocabulary();
+            return;
+        }
+
+        const vocabularyEntries = StorageManager.decompressData(compressedData) || [];
+        this.allVocabularyEntries = vocabularyEntries; // Store all entries for filtering
+        this.displayVocabulary(vocabularyEntries);
+
+        // Clear filter when loading new vocabulary and cancel any pending filter
+        const filterInput = document.getElementById('phrase-filter');
+        if (filterInput) {
+            filterInput.value = '';
+        }
+        
+        // Update placeholder text for the filter
+        this.updateFilterPlaceholder();
+        
+        // Cancel any pending filter timeout
+        if (this.filterTimeout) {
+            clearTimeout(this.filterTimeout);
+            this.filterTimeout = null;
+        }
+    }
+
+    updateFilterPlaceholder() {
+        const filterInput = document.getElementById('phrase-filter');
+        if (!filterInput || !this.currentLanguagePair) return;
+
+        const [lang1, lang2] = this.currentLanguagePair.split(':');
+        const sourceLang = this.currentDirection === 'normal' ? lang1 : lang2;
+        const sourceLanguageDisplay = sourceLang.charAt(0).toUpperCase() + sourceLang.slice(1);
+        
+        filterInput.placeholder = `Filter ${sourceLanguageDisplay} words, phrases or sentences...`;
+    }
+
+    debouncedFilterVocabulary(filterText) {
+        // Clear any existing timeout
+        if (this.filterTimeout) {
+            clearTimeout(this.filterTimeout);
+        }
+
+        // If filter is empty, apply immediately (no need to wait)
+        if (!filterText.trim()) {
+            this.hideFilterPending();
+            this.filterVocabulary(filterText);
+            return;
+        }
+
+        // Add visual feedback that filtering is pending
+        this.showFilterPending();
+
+        // Set new timeout
+        this.filterTimeout = setTimeout(() => {
+            this.filterVocabulary(filterText);
+            this.hideFilterPending();
+            this.filterTimeout = null;
+        }, 500);
+    }
+
+    showFilterPending() {
+        const filterInput = document.getElementById('phrase-filter');
+        if (filterInput) {
+            filterInput.style.borderColor = '#ffa500';
+            filterInput.style.backgroundColor = '#fff8e1';
+        }
+    }
+
+    hideFilterPending() {
+        const filterInput = document.getElementById('phrase-filter');
+        if (filterInput) {
+            filterInput.style.borderColor = '#ddd';
+            filterInput.style.backgroundColor = 'white';
+        }
+    }
+
+    filterVocabulary(filterText) {
+        if (!this.currentLanguagePair || !this.allVocabularyEntries) {
+            return;
+        }
+
+        if (!filterText.trim()) {
+            // Show all entries if filter is empty
+            this.displayVocabulary(this.allVocabularyEntries);
+            return;
+        }
+
+        // Normalize filter text for comparison
+        const normalizedFilter = filterText.toLowerCase();
+        const normalDirection = this.currentDirection === 'normal';
+
+        let filteredEntries = [];
+        let filterWords = [];
+
+        try {
+            // Set up the vocabulary storage for filtering
+            this.setupVocabularyStorageForFiltering();
+
+            // Use extractVocabularyEntriesFromPrompt
+            const [lang1, lang2] = this.currentLanguagePair.split(':');
+            const sourceLang = this.currentDirection === 'normal' ? lang1 : lang2;
+
+            filterWords = this.vocabularyStorage.extractVocabularyEntriesFromPrompt(
+                filterText, 
+                sourceLang, 
+                [lang1, lang2]
+            );
+
+            for (let entry of this.allVocabularyEntries) {
+                const [primary, secondary] = entry;
+                const sourceWord = normalDirection ? primary : secondary;
+                
+                // Check if this entry's source word matches the relevant word
+                if (filterWords.some(relevantWord => relevantWord.toLowerCase() === sourceWord.toLowerCase())) {
+                    filteredEntries.push(entry);
+                }
+            }
+        } catch (error) {
+            console.error('Error in vocabulary extraction filtering:', error);
+            // Continue with simple filter results
+            filterWords = normalizedFilter.split(/\s+/).filter(w => w.length > 0);
+            filterWords.forEach(filterWord => {
+                this.allVocabularyEntries.forEach(entry => {
+                    const [primary, secondary] = entry;
+                    const sourceWord = normalDirection ? primary : secondary;
+                    
+                    // Only check source words (no target word checking)
+                    const sourceWords = sourceWord.toLowerCase().split(/\s+/);
+                    
+                    if (sourceWords.some(word => word.startsWith(filterWord))) {
+                        filteredEntries.push(entry);
+                    }
+                });
+            });
+        }
+        
+        // Create filter result with missing words as rows
+        this.displayFilteredVocabulary(filteredEntries, filterWords);
+    }
+
+    displayFilteredVocabulary(filteredEntries, filterWords) {
+        const container = document.getElementById('vocabulary-container');
+        const grid = document.getElementById('vocabulary-grid');
+        const noVocabMsg = document.getElementById('no-vocabulary-message');
+        const description = document.getElementById('vocabulary-description');
+
+        // Hide other elements and show vocabulary
+        description.style.display = 'none';
+        noVocabMsg.style.display = 'none';
+        container.style.display = 'block';
 
         // Clear existing content
-        vocabContainer.innerHTML = '';
+        VocabularyRenderer.clearGrid(grid);
 
-        // Create vocabulary grid
-        const vocabGrid = VocabularyRenderer.createVocabularyGrid();
+        // Group existing entries by source word and combine translations
+        const groupedEntries = this.groupEntriesBySourceWord(filteredEntries);
 
-        vocabularyEntries.forEach((entry, index) => {
-            const existingTranslation = this.lookupTranslation(entry, AppState.promptLang);
-            VocabularyRenderer.createVocabularyRow(entry, existingTranslation, vocabGrid, index);
-        });
+        let foundCount = 0;
 
-        // Insert the add empty row button
-        VocabularyRenderer.addGridAddButton(vocabGrid, () => {
-            this.addNewVocabularyEntry(vocabGrid);
-        });
+        for (let word of filterWords) {
+            let translation = '';
+            Object.keys(groupedEntries).forEach(sourceWord => {
+                if (sourceWord.toLowerCase() === word.toLowerCase()) {
+                    translation = groupedEntries[sourceWord].join(', ');
+                }
+            });
 
-        vocabContainer.appendChild(vocabGrid);
-        
-        // Enable vocabulary buttons
-        DOM.setEnabled('wordsFromClipboardBtn', true);
-        DOM.setEnabled('saveWordsBtn', true);
-        DOM.setEnabled('verifyWordsBtn', vocabularyEntries.length > 0);
-    }
-
-    addNewVocabularyEntry(vocabGrid) {
-        if (!vocabGrid) {
-            // Create new grid if none exists
-            vocabGrid = VocabularyRenderer.createVocabularyGrid();
-            vocabContainer.innerHTML = '';
-            vocabContainer.appendChild(vocabGrid);
+            if (translation) { foundCount++; }
+            VocabularyRenderer.createVocabularyRow(word, translation, grid);
         }
 
-        // Add new empty row
-        VocabularyRenderer.createVocabularyRow('', '', vocabGrid);
-        
-        // Re-add the grid add button
-        VocabularyRenderer.addGridAddButton(vocabGrid, () => {
-            this.addNewVocabularyEntry(vocabGrid);
+        // Add button at the end of the grid to add new entries
+        VocabularyRenderer.addGridAddButton(grid, () => {
+            this.addNewEntry();
         });
+
+        // Update vocabulary info with filter information
+        const totalCount = filterWords.length;
         
-        // Focus on the new input
-        VocabularyRenderer.focusLastSourceInput(vocabGrid);
+        this.updateVocabularyInfoWithFilter(foundCount, totalCount, filterText);
     }
 
-    async loadVocabularyFromClipboard() {
-        try {
-            const clipboardText = await ClipboardUtils.readText();
-            if (!clipboardText) {
-                alert('No text found in clipboard.');
+    updateVocabularyInfoWithFilter(foundCount, totalCount, filterText) {
+        if (!this.currentLanguagePair) return;
+
+        const [lang1, lang2] = this.currentLanguagePair.split(':');
+        const sourceLang = this.currentDirection === 'normal' ? lang1 : lang2;
+        const targetLang = this.currentDirection === 'normal' ? lang2 : lang1;
+        
+        const description = document.getElementById('vocabulary-description');
+        description.style.display = 'block';
+        
+        const totalEntries = this.allVocabularyEntries ? this.groupEntriesBySourceWord(this.allVocabularyEntries) : {};
+        const totalAvailableCount = Object.keys(totalEntries).length;
+        
+        if (foundCount < totalCount) {
+            const missingCount = totalCount - foundCount;
+            description.innerHTML = `<strong>${foundCount}</strong> matched, <strong>${missingCount}</strong> missing from <strong>${totalAvailableCount}</strong> entries`;
+        } else {
+            description.innerHTML = `<strong>${foundCount}</strong> matched of <strong>${totalAvailableCount}</strong> entries`;
+        }
+        
+        const title = document.getElementById('vocabulary-title');
+        title.innerHTML = `${sourceLang.charAt(0).toUpperCase() + sourceLang.slice(1)} → ${targetLang.charAt(0).toUpperCase() + targetLang.slice(1)} Vocabulary`;
+    }
+
+    displayVocabulary(entries) {
+        const container = document.getElementById('vocabulary-container');
+        const grid = document.getElementById('vocabulary-grid');
+        const noVocabMsg = document.getElementById('no-vocabulary-message');
+        const description = document.getElementById('vocabulary-description');
+
+        if (!entries || entries.length === 0) {
+            this.showNoVocabulary();
+            return;
+        }
+
+        // Hide other elements and show vocabulary
+        description.style.display = 'none';
+        noVocabMsg.style.display = 'none';
+        container.style.display = 'block';
+
+        // Clear existing content
+        VocabularyRenderer.clearGrid(grid);
+
+        // Group entries by source word and combine translations
+        const groupedEntries = this.groupEntriesBySourceWord(entries);
+
+        // Sort entries alphabetically by the source language
+        const sortedEntries = Object.keys(groupedEntries).sort((a, b) => 
+            a.toLowerCase().localeCompare(b.toLowerCase())
+        );
+
+        // Create vocabulary rows
+        sortedEntries.forEach(sourceWord => {
+            const translations = groupedEntries[sourceWord];
+            VocabularyRenderer.createVocabularyRow(sourceWord, translations.join(', '), grid);
+        });
+
+        // Add button at the end of the grid to add new entries
+        VocabularyRenderer.addGridAddButton(grid, () => {
+            this.addNewEntry();
+        });
+
+        // Update vocabulary info
+        this.updateVocabularyInfo(sortedEntries.length);
+    }
+
+    groupEntriesBySourceWord(entries) {
+        const grouped = {};
+        
+        entries.forEach(entry => {
+            if (Array.isArray(entry) && entry.length === 2) {
+                const [primary, secondary] = entry;
+                
+                // Here we show striked out entries too, so the user can edit them
+                
+                const sourceWord = this.currentDirection === 'normal' ? primary : secondary;
+                const targetWord = this.currentDirection === 'normal' ? secondary : primary;
+                
+                if (!grouped[sourceWord]) {
+                    grouped[sourceWord] = [];
+                }
+                
+                // Add translation if not already present
+                if (!grouped[sourceWord].includes(targetWord)) {
+                    grouped[sourceWord].push(targetWord);
+                }
+            }
+        });
+
+        return grouped;
+    }
+
+    showNoVocabulary() {
+        const container = document.getElementById('vocabulary-container');
+        const noVocabMsg = document.getElementById('no-vocabulary-message');
+        const description = document.getElementById('vocabulary-description');
+
+        description.style.display = 'none';
+        container.style.display = 'none';
+        noVocabMsg.style.display = 'block';
+    }
+
+    showEmptyVocabularyGrid() {
+        const container = document.getElementById('vocabulary-container');
+        const grid = document.getElementById('vocabulary-grid');
+        const noVocabMsg = document.getElementById('no-vocabulary-message');
+        const description = document.getElementById('vocabulary-description');
+
+        // Hide other elements and show vocabulary container
+        description.style.display = 'none';
+        noVocabMsg.style.display = 'none';
+        container.style.display = 'block';
+
+        // Clear existing content and add the add button
+        VocabularyRenderer.clearGrid(grid, () => {
+            this.addNewEntry();
+        });
+        
+        // Update vocabulary info
+        this.updateVocabularyInfo(0);
+    }
+
+    hideVocabulary() {
+        const container = document.getElementById('vocabulary-container');
+        const noVocabMsg = document.getElementById('no-vocabulary-message');
+        const description = document.getElementById('vocabulary-description');
+        const title = document.getElementById('vocabulary-title');
+
+        container.style.display = 'none';
+        noVocabMsg.style.display = 'none';
+        description.style.display = 'block';
+        description.textContent = 'Select a language pair from the sidebar to view and edit your vocabulary.';
+        title.innerHTML = 'Central Vocabulary';
+    }
+
+    updateUI() {
+        const switchBtn = document.getElementById('switch-direction-btn');
+        const exportBtn = document.getElementById('export-vocab-btn');
+        const addEntryBtn = document.getElementById('add-entry-btn');
+        const saveChangesBtn = document.getElementById('save-changes-btn');
+        const saveChangesMainBtn = document.getElementById('save-changes-main-btn');
+        
+        const hasSelection = !!this.currentLanguagePair;
+        switchBtn.disabled = !hasSelection;
+        exportBtn.disabled = !hasSelection;
+        addEntryBtn.disabled = !hasSelection;
+        saveChangesBtn.disabled = !hasSelection;
+        saveChangesMainBtn.disabled = !hasSelection;
+
+        if (hasSelection) {
+            const [lang1, lang2] = this.currentLanguagePair.split(':');
+            const sourceLang = this.currentDirection === 'normal' ? lang1 : lang2;
+            const targetLang = this.currentDirection === 'normal' ? lang2 : lang1;
+            
+            switchBtn.textContent = `Switch to ${targetLang.charAt(0).toUpperCase() + targetLang.slice(1)} → ${sourceLang.charAt(0).toUpperCase() + sourceLang.slice(1)}`;
+        } else {
+            switchBtn.textContent = 'Switch Direction';
+        }
+    }
+
+    updateVocabularyInfo(count) {
+        if (!this.currentLanguagePair) return;
+
+        const [lang1, lang2] = this.currentLanguagePair.split(':');
+        const sourceLang = this.currentDirection === 'normal' ? lang1 : lang2;
+        const targetLang = this.currentDirection === 'normal' ? lang2 : lang1;
+        
+        const description = document.getElementById('vocabulary-description');
+        description.style.display = 'block';
+        
+        // Check if we have a filter applied
+        const filterInput = document.getElementById('phrase-filter');
+        const hasFilter = filterInput && filterInput.value.trim();
+        const totalEntries = this.allVocabularyEntries ? this.groupEntriesBySourceWord(this.allVocabularyEntries) : {};
+        const totalCount = Object.keys(totalEntries).length;
+        
+        if (hasFilter && count < totalCount) {
+            description.innerHTML = `<strong>${count} of ${totalCount} entries</strong> (filtered)`;
+        } else {
+            description.innerHTML = `<strong>${count} entries</strong>`;
+        }
+        
+        const title = document.getElementById('vocabulary-title');
+        title.innerHTML = `${sourceLang.charAt(0).toUpperCase() + sourceLang.slice(1)} → ${targetLang.charAt(0).toUpperCase() + targetLang.slice(1)} Vocabulary`
+    }
+
+    switchDirection() {
+        if (!this.currentLanguagePair) return;
+        
+        // Cancel any pending filter timeout since we're changing direction
+        if (this.filterTimeout) {
+            clearTimeout(this.filterTimeout);
+            this.filterTimeout = null;
+            this.hideFilterPending();
+        }
+        
+        this.currentDirection = this.currentDirection === 'normal' ? 'reverse' : 'normal';
+        this.loadLanguagePairVocabulary();
+        this.updateUI();
+    }
+
+    setupVocabularyStorageForFiltering() {
+        // Set up the vocabulary storage to work with current language pair and direction
+        const [lang1, lang2] = this.currentLanguagePair.split(':');
+        const sourceLang = this.currentDirection === 'normal' ? lang1 : lang2;
+
+        // Configure the vocabulary storage for standalone use
+        this.vocabularyStorage.configureStandalone(
+            this.currentLanguagePair,
+            sourceLang,
+            this.allVocabularyEntries
+        );
+    }
+
+    exportVocabulary() {
+        if (!this.currentLanguagePair) return;
+
+        const compressedData = this.vocabularyData[this.currentLanguagePair];
+        if (!compressedData) {
+            alert('No vocabulary data to export.');
+            return;
+        }
+
+        const vocabularyEntries = StorageManager.decompressData(compressedData) || [];
+        if (vocabularyEntries.length === 0) {
+            alert('No vocabulary entries to export.');
+            return;
+        }
+
+        // Group entries by source word and combine translations
+        const groupedEntries = this.groupEntriesBySourceWord(vocabularyEntries);
+        
+        if (Object.keys(groupedEntries).length === 0) {
+            alert('No valid vocabulary entries to export.');
+            return;
+        }
+
+        const [lang1, lang2] = this.currentLanguagePair.split(':');
+        const sourceLang = this.currentDirection === 'normal' ? lang1 : lang2;
+        const targetLang = this.currentDirection === 'normal' ? lang2 : lang1;
+        
+        // Create header line with language pair and direction
+        const headerLine = `Vocabulary: ${sourceLang} → ${targetLang}`;
+        
+        // Format entries for export
+        const exportLines = [];
+        Object.keys(groupedEntries).forEach(sourceWord => {
+            const translations = groupedEntries[sourceWord];
+            exportLines.push(`${sourceWord} → ${translations.join(', ')}`);
+        });
+
+        // Sort alphabetically
+        exportLines.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+
+        // Combine header and entries
+        const content = [headerLine, ...exportLines].join('\n');
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        
+        const filename = `vocabulary_${sourceLang}_to_${targetLang}.txt`;
+        
+        // Create download link
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        console.log(`Exported ${exportLines.length} vocabulary entries to ${filename}`);
+    }
+
+    handleFileImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const content = e.target.result;
+            this.showImportModal(content);
+        };
+        reader.readAsText(file);
+    }
+
+    showImportModal(content) {
+        const modal = document.getElementById('import-modal');
+        const preview = document.getElementById('import-preview');
+        
+        preview.value = content;
+        modal.style.display = 'flex';
+    }
+
+    hideImportModal() {
+        document.getElementById('import-modal').style.display = 'none';
+        document.getElementById('import-file-input').value = '';
+    }
+
+    confirmImport() {
+        const content = document.getElementById('import-preview').value;
+        const lines = content.split('\n').filter(line => line.trim());
+        
+        if (lines.length === 0) {
+            alert('No valid entries found in the file.');
+            return;
+        }
+
+        // Check for vocabulary header line
+        const firstLine = lines[0].trim();
+        let importPairKey = null;
+        let importDirection = 'normal';
+        let vocabularyLines = lines;
+
+        // Parse header if it exists
+        if (firstLine.startsWith('Vocabulary:')) {
+            const headerMatch = firstLine.match(/Vocabulary:\s*(\w+)\s*→\s*(\w+)/);
+            if (!headerMatch) {
+                alert('Invalid header format. Expected format: "Vocabulary: sourceLang → targetLang"\n\nPlease add this header as the first line of your file.');
                 return;
             }
 
-            this.parseAndLoadVocabulary(clipboardText);
-        } catch (error) {
-            console.error('Error loading vocabulary from clipboard:', error);
-            alert('Error reading from clipboard. Please try again.');
+            const [, sourceLang, targetLang] = headerMatch;
+            
+            // Find the matching language pair key
+            const availablePairs = Object.keys(this.vocabularyData);
+            importPairKey = availablePairs.find(pairKey => {
+                const [lang1, lang2] = pairKey.split(':');
+                return (lang1 === sourceLang.toLowerCase() && lang2 === targetLang.toLowerCase()) ||
+                       (lang1 === targetLang.toLowerCase() && lang2 === sourceLang.toLowerCase());
+            });
+
+            if (!importPairKey) {
+                // Create new language pair key if it doesn't exist
+                const sortedLangs = [sourceLang.toLowerCase(), targetLang.toLowerCase()].sort();
+                importPairKey = sortedLangs.join(':');
+            }
+
+            // Determine import direction
+            const [lang1, lang2] = importPairKey.split(':');
+            importDirection = (lang1 === sourceLang.toLowerCase()) ? 'normal' : 'reverse';
+            
+            // Remove header line from vocabulary lines
+            vocabularyLines = lines.slice(1);
+            
+            console.log(`Importing for pair: ${importPairKey}, direction: ${importDirection}`);
+        } else {
+            // No header found - show error
+            alert('Missing vocabulary header!\n\nPlease add a header line as the first line of your file in this format:\nVocabulary: sourceLang → targetLang\n\nExample: Vocabulary: en → hu');
+            return;
         }
-    }
 
-    parseAndLoadVocabulary(text) {
-        const lines = text.split('\n').filter(line => line.trim());
-        const vocabContainer = DOM.elements.vocabContainer;
-        
-        if (!vocabContainer) return;
+        if (vocabularyLines.length === 0) {
+            alert('No vocabulary entries found after the header line.');
+            return;
+        }
 
-        // Clear existing content
-        vocabContainer.innerHTML = '';
+        let importedCount = 0;
+        const compressedData = this.vocabularyData[importPairKey];
+        const existingEntries = compressedData ? StorageManager.decompressData(compressedData) || [] : [];
 
-        // Create vocabulary grid
-        const vocabGrid = VocabularyRenderer.createVocabularyGrid();
-
-        lines.forEach((line, index) => {
-            // Try to split by common separators: tab, |, →, ->, =, :
-            const separators = ['\t', '|', '→', '->', '=', ':'];
+        vocabularyLines.forEach(line => {
+            // Try to split with common separators
+            const separators = ['→', '->', '|', '\t', ':', '='];
             let source = '';
-            let translation = '';
+            let translationsText = '';
 
             for (const sep of separators) {
                 if (line.includes(sep)) {
                     const parts = line.split(sep, 2);
                     source = parts[0].trim();
-                    translation = parts[1] ? parts[1].trim() : '';
+                    translationsText = parts[1] ? parts[1].trim() : '';
                     break;
                 }
             }
 
-            if (source) {
-                // Look up existing translation if not provided
-                if (!translation && AppState.promptLang) {
-                    translation = this.lookupTranslation(source, AppState.promptLang);
-                }
-                VocabularyRenderer.createVocabularyRow(source, translation, vocabGrid, index);
+            if (source && translationsText) {
+                // Split multiple translations by comma
+                const translations = translationsText
+                    .split(',')
+                    .map(t => t.trim())
+                    .filter(t => t.length > 0);
+
+                translations.forEach(translation => {
+                    // Determine correct order based on import direction and language pair
+                    const [lang1, lang2] = importPairKey.split(':');
+                    let primaryWord, secondaryWord;
+                
+                    if (importDirection === 'normal') {
+                        primaryWord = source;
+                        secondaryWord = translation;
+                    } else {
+                        primaryWord = translation;
+                        secondaryWord = source;
+                    }
+
+                    // Check if entry already exists
+                    const existsAlready = existingEntries.some(entry => 
+                        Array.isArray(entry) && entry.length === 2 && 
+                        entry[0].toLowerCase() === primaryWord.toLowerCase() && 
+                        entry[1].toLowerCase() === secondaryWord.toLowerCase()
+                    );
+
+                    if (!existsAlready) {
+                        existingEntries.push([primaryWord, secondaryWord]);
+                        importedCount++;
+                    }
+                });
             }
         });
 
-        // Insert the add empty row button
-        VocabularyRenderer.addGridAddButton(vocabGrid, () => {
-            this.addNewVocabularyEntry(vocabGrid);
-        });
+        if (importedCount > 0) {
+            // Save updated vocabulary to local data
+            this.vocabularyData[importPairKey] = StorageManager.compressData(existingEntries);
+            
+            // Save to localStorage
+            StorageManager.setCentralVocabulary(this.vocabularyData);
+            
+            // Refresh language pair dropdown
+            this.populateLanguagePairs();
+            
+            // Set the dropdown value and update the internal state properly
+            document.getElementById('language-pair-select').value = importPairKey;
+            this.currentLanguagePair = importPairKey;
+            this.currentDirection = importDirection;
+            this.loadLanguagePairVocabulary();
+            this.updateUI();
+            
+            const [lang1, lang2] = importPairKey.split(':');
+            const sourceLang = importDirection === 'normal' ? lang1 : lang2;
+            const targetLang = importDirection === 'normal' ? lang2 : lang1;
+            
+            alert(`Successfully imported ${importedCount} new vocabulary entries for ${sourceLang} → ${targetLang}.`);
+            
+            // Close sidebar on mobile after successful import
+            this.closeSidebarOnMobile();
+        } else {
+            alert('No new entries were imported. All entries may already exist.');
+        }
 
-        vocabContainer.appendChild(vocabGrid);
-        
-        // Enable buttons
-        DOM.setEnabled('verifyWordsBtn', lines.length > 0);
-        DOM.setEnabled('saveWordsBtn', true);
+        this.hideImportModal();
     }
 
-    saveVocabulary() {
-        if (!AppState.config || !AppState.config['langA-B']) {
-            alert('No language configuration available.');
+    saveVocabularyChanges() {
+        if (!this.currentLanguagePair) {
+            alert('No language pair selected.');
             return;
         }
 
-        const [langA, langB] = AppState.config['langA-B'];
-        const sourceLang = AppState.promptLang;
-        const targetLang = sourceLang === langA ? langB : langA;
-        
         const entries = VocabularyRenderer.getVocabularyInputs();
+        
+        if (entries.length === 0) {
+            alert('No vocabulary entries to save.');
+            return;
+        }
+
+        const [lang1, lang2] = this.currentLanguagePair.split(':');
+        const sourceLang = this.currentDirection === 'normal' ? lang1 : lang2;
+        const targetLang = this.currentDirection === 'normal' ? lang2 : lang1;
+        
+        // Get existing entries
+        let compressedData = this.vocabularyData[this.currentLanguagePair];
+        let existingEntries = compressedData ? StorageManager.decompressData(compressedData) || [] : [];
+        
+        // Clear all existing entries for this language pair (we'll rebuild from the UI)
+        existingEntries = [];
+        
         let savedCount = 0;
 
         entries.forEach(entry => {
             const { source, translation } = entry;
             
-            // First, remove all existing pairs for this source word
-            this.removeVocabularyPairsForSourceWord(source, sourceLang);
-            
-            // Then add the new translations (if any)
-            if (translation) {
-                const translations = translation
-                    .split(',')
-                    .map(t => t.trim())
-                    .filter(t => t.length > 0);
-                
-                translations.forEach(trans => {
-                    this.saveVocabularyPair(source, sourceLang, trans, targetLang);
-                    savedCount++;
-                });
+            if (source) {
+                if (translation) {
+                    // Split multiple translations by comma
+                    const translations = translation
+                        .split(',')
+                        .map(t => t.trim())
+                        .filter(t => t.length > 0);
+                    
+                    translations.forEach(trans => {
+                        // Determine correct order based on current direction and language pair
+                        let primaryWord, secondaryWord;
+                        
+                        if (this.currentDirection === 'normal') {
+                            primaryWord = source;
+                            secondaryWord = trans;
+                        } else {
+                            primaryWord = trans;
+                            secondaryWord = source;
+                        }
+                        
+                        existingEntries.push([primaryWord, secondaryWord]);
+                        savedCount++;
+                    });
+                }
+                // If source exists but no translation, we simply don't add it (deletion by empty translation)
             }
         });
 
+        // Save updated vocabulary
+        this.vocabularyData[this.currentLanguagePair] = StorageManager.compressData(existingEntries);
+        StorageManager.setCentralVocabulary(this.vocabularyData);
+        
+        // Refresh display
+        this.loadLanguagePairVocabulary();
+        
         if (savedCount > 0) {
-            this.saveCurrentLanguagePairVocab();
-            alert(`Saved ${savedCount} vocabulary pairs (${sourceLang} ↔ ${targetLang}) to your central vocabulary.`);
+            alert(`Saved ${savedCount} vocabulary entries for ${sourceLang} → ${targetLang}.`);
         } else {
-            this.saveCurrentLanguagePairVocab(); // Still save to persist deletions
-            alert('Vocabulary updated. Removed translations have been deleted.');
+            alert('All entries have been removed (empty translations delete entries).');
         }
     }
 
-    saveVocabularyPair(sourceWord, sourceLang, targetWord, targetLang) {
-        const pairVocab = this.getCurrentLanguagePairVocab();
-        const [primaryLang, secondaryLang] = this.getLanguageOrder();
+    addNewEntry() {
+        if (!this.currentLanguagePair) return;
+
+        const grid = document.getElementById('vocabulary-grid');
+        if (!grid) return;
+
+        const container = document.getElementById('vocabulary-container');
         
-        // Determine correct order based on language alphabetical order
-        let primaryWord, secondaryWord;
-        if (sourceLang === primaryLang) {
-            primaryWord = sourceWord;
-            secondaryWord = targetWord;
-        } else {
-            primaryWord = targetWord;
-            secondaryWord = sourceWord;
+        // If container is hidden, show empty grid first
+        if (container.style.display === 'none') {
+            this.showEmptyVocabularyGrid();
+            return;
         }
+
+        // Create a new empty vocabulary row
+        VocabularyRenderer.createVocabularyRow('', '', grid);
         
-        pairVocab.push([primaryWord, secondaryWord]);
+        // Re-add the grid add button
+        VocabularyRenderer.addGridAddButton(grid, () => {
+            this.addNewEntry();
+        });
+        
+        // Focus on the new input
+        VocabularyRenderer.focusLastSourceInput(grid);
+
+        // Close sidebar on mobile
+        this.closeSidebarOnMobile();
     }
 
-    removeVocabularyPairsForSourceWord(sourceWord, sourceLang) {
-        const pairVocab = this.getCurrentLanguagePairVocab();
-        const [primaryLang, secondaryLang] = this.getLanguageOrder();
-        const normalizedSourceWord = sourceWord.toLowerCase();
-        
-        // Determine which position the source word should be in based on language order
-        let sourceIsInPrimaryPosition = sourceLang === primaryLang;
-        
-        // Remove all pairs that have this source word
-        for (let i = pairVocab.length - 1; i >= 0; i--) {
-            const pair = pairVocab[i];
-            if (!Array.isArray(pair) || pair.length !== 2) continue;
+    closeSidebarOnMobile() {
+        if (window.innerWidth <= 768) {
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.getElementById('sidebar-toggle');
+            const content = document.getElementById('sidebar-content');
             
-            const [primaryWord, secondaryWord] = pair;
-            
-            if (sourceIsInPrimaryPosition && primaryWord.toLowerCase() === normalizedSourceWord) {
-                pairVocab.splice(i, 1);
-            } else if (!sourceIsInPrimaryPosition && secondaryWord.toLowerCase() === normalizedSourceWord) {
-                pairVocab.splice(i, 1);
+            if (sidebar && !sidebar.classList.contains('collapsed')) {
+                sidebar.classList.add('collapsed');
+                if (content) content.style.display = 'none';
+                if (toggle) toggle.style.transform = 'rotate(-90deg)';
             }
         }
-    }
-
-    generateVerificationPrompt() {
-        const entries = VocabularyRenderer.getVocabularyInputs();
-
-        if (entries.length === 0) {
-            alert('No vocabulary words to verify.');
-            return;
-        }
-
-        const languages = AppState.config?.['langA-B'] || ['Language A', 'Language B'];
-        const sourceLang = AppState.promptLang === languages[0] ? languages[0] : languages[1];
-        const targetLang = AppState.promptLang === languages[0] ? languages[1] : languages[0];
-
-        const currentExercise = AppState.getCurrentExercise();
-        const promptKey = AppState.promptLang === languages[0] ? 'A' : 'B';
-        const currentPrompt = currentExercise[promptKey];
-
-        const prompt = `Please correct this list of ${sourceLang} → ${targetLang} vocabulary translations, focusing on the sentence "${currentPrompt}":
-
-${entries.map(entry => `${entry.source} → ${entry.translation || '[missing]'}`).join('\n')}
-
-Only output the correct vocabulary list, in a copyable code block.
-Format as "expression → translation1, translation2, ...", each on a separete line.
-Add phrases, if the word-for-word translation is not accurate.
-You may add or remove lines.`;
-
-        ClipboardUtils.copyText(prompt, 'Vocabulary verification prompt copied to clipboard! Paste it into your AI assistant.');
-    }
-
-    openVocabularyTranslation(sourceLang, targetLang) {
-        if (!AppState.config || !AppState.config['langA-B']) {
-            console.error('No language configuration available');
-            return;
-        }
-
-        const languages = AppState.config['langA-B'];
-        const lang = sourceLang === languages[0] ? 'A' : 'B';
-        const vocab = AppState.vocab[lang].filter(word => word.length >= 3);
-        vocab.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-        
-        if (vocab.length === 0) {
-            alert('No vocabulary words found for this lesson.');
-            return;
-        }
-
-        const encodedPrompt = encodeURIComponent(vocab.join('.\t'));
-        const translateUrl = `https://translate.google.com/?sl=${sourceLang}&tl=${targetLang}&text=${encodedPrompt}`;
-        
-        window.open(translateUrl, '_blank');
-        console.log(`Opened vocabulary (${sourceLang} → ${targetLang}) with ${vocab.length} words`);
     }
 }

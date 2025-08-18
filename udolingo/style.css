@@ -169,7 +169,7 @@ body {
 
 .vocab-grid {
     display: grid;
-    grid-template-columns: 3fr 5fr;
+    grid-template-columns: 7fr 10fr;
     gap: 0.5rem;
     margin-bottom: 1rem;
     max-height: 22vh;
@@ -226,12 +226,12 @@ body {
 #phrase-filter {
     box-sizing: border-box;
     width: 100%;
-    padding: 0.7rem;
+    padding: 0.6rem;
     margin-bottom: 0.5rem;
     border: 1px solid #ddd;
     border-radius: 5px;
     font-size: 1rem;
-    transition: border-color 0.2s, background-color 0.2s;
+    transition: border-color 0.3s, background-color 0.3s;
 }
 
 #phrase-filter:focus {
@@ -240,12 +240,8 @@ body {
     box-shadow: 0 0 3px rgba(0, 140, 186, 0.3);
 }
 
-.no-results {
-    text-align: center;
-    padding: 2rem;
-    color: #666;
-    font-style: italic;
-    grid-column: 2 span;
+#vocabulary-description {
+    margin: 10px 0px;
 }
 
 button {

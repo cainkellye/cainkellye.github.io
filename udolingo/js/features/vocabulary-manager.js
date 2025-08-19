@@ -390,10 +390,10 @@ export class VocabularyManager {
         // Update vocabulary info with filter information
         const totalCount = filterWords.length;
         
-        this.updateVocabularyInfoWithFilter(foundCount, totalCount, filterText);
+        this.updateVocabularyInfoWithFilter(foundCount, totalCount);
     }
 
-    updateVocabularyInfoWithFilter(foundCount, totalCount, filterText) {
+    updateVocabularyInfoWithFilter(foundCount, totalCount) {
         if (!this.currentLanguagePair) return;
 
         const [lang1, lang2] = this.currentLanguagePair.split(':');

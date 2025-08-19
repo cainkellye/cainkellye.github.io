@@ -111,22 +111,16 @@ export class VocabularyStorage {
         throw new Error('No language pair available. Either configure standalone mode or pass language pair.');
     }
 
-    extractWordsFromPrompt(prompt) {
-        if (!prompt) return [];
-
-        const words = ArrayUtils.removeDuplicates(StringUtils.splitSentenceClean(prompt));
-        return words;
-    }
-
     extractVocabularyEntriesFromPrompt(prompt, currentLang, languagePairArray) {
         // Use provided parameters or fall back to configured ones
         const lang = currentLang || this.getCurrentLanguage();
         this._tempLanguagePair = languagePairArray || this.getLanguagePairArray();
 
-        const wordsFromPrompt = this.extractWordsFromPrompt(prompt);
-        const vocabularyEntries = [];
+        const wordsFromPrompt = ArrayUtils.removeDuplicates(StringUtils.splitSentenceClean(prompt));
+        const vocabularyEntries = []; // Keeping the order of entries
         
-        for (const word of wordsFromPrompt) {
+        for (let word of wordsFromPrompt) {
+            word = word.toLowerCase();
             const exactTranslations = this.lookupTranslation(word, lang, languagePairArray);
             const strikedOut = exactTranslations === '---';
             let relatedPhrases = this.findRelatedPhrases(word, lang, languagePairArray);
@@ -175,34 +169,30 @@ export class VocabularyStorage {
 
     lookupTranslation(word, currentLang, languagePairArray) {
         const pairVocab = this.getVocabularyData(languagePairArray);
-        const normalizedWord = word.toLowerCase();
         const [primaryLang, secondaryLang] = (languagePairArray || this.getLanguagePairArray()).sort();
-        const foundTranslations = new Set();
+        const foundTranslations = [];
         
         // Search through the vocabulary array for exact matches
         for (const pair of pairVocab) {
-            if (!Array.isArray(pair) || pair.length !== 2) continue;
-            
             const [primaryWord, secondaryWord] = pair;
             
             // Check if current word matches either position
-            if (currentLang === primaryLang && primaryWord.toLowerCase() === normalizedWord) {
+            if (currentLang === primaryLang && primaryWord.toLowerCase() === word) {
                 if (secondaryWord === '---') return '---'; // Striked out word
-                foundTranslations.add(secondaryWord);
-            } else if (currentLang === secondaryLang && secondaryWord.toLowerCase() === normalizedWord) {
+                foundTranslations.push(secondaryWord);
+            } else if (currentLang === secondaryLang && secondaryWord.toLowerCase() === word) {
                 if (primaryWord === '---') return '---'; // Striked out word
-                foundTranslations.add(primaryWord);
+                foundTranslations.push(primaryWord);
             }
         }
-        
-        return foundTranslations.size > 0 ? Array.from(foundTranslations).join(', ') : '';
+
+        return foundTranslations.length > 0 ? foundTranslations.join(', ') : '';
     }
 
     findRelatedPhrases(word, currentLang, languagePairArray) {
         const pairVocab = this.getVocabularyData(languagePairArray);
         const [primaryLang, secondaryLang] = (languagePairArray || this.getLanguagePairArray()).sort();
         const relatedPhrases = new Set();
-        word = word.toLowerCase();
         
         // Search for entries that contain the word as a standalone word
         for (const pair of pairVocab) {

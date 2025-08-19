@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Vocabulary Box
  * Handles the vocabulary box functionality on the main exercise page
  */
@@ -38,7 +38,7 @@ export class VocabularyBox {
 
         vocabularyEntries.forEach((entry, index) => {
             const existingTranslation = this.vocabularyStorage.lookupTranslation(
-                entry, 
+                entry.toLowerCase(), 
                 AppState.promptLang, 
                 AppState.config['langA-B']
             );
@@ -107,8 +107,8 @@ export class VocabularyBox {
         const vocabGrid = VocabularyRenderer.createVocabularyGrid();
 
         lines.forEach((line, index) => {
-            // Try to split by common separators: tab, |, ?, ->, =, :
-            const separators = ['\t', '|', '?', '->', '=', ':'];
+            // Try to split by common separators: tab, |, →, ->, =, :
+            const separators = ['\t', '|', '→', '->', '=', ':'];
             let source = '';
             let translation = '';
 
@@ -191,7 +191,7 @@ export class VocabularyBox {
 
         if (savedCount > 0) {
             this.vocabularyStorage.saveCurrentLanguagePairVocab(AppState.config['langA-B']);
-            alert(`Saved ${savedCount} vocabulary pairs (${sourceLang} ? ${targetLang}) to your central vocabulary.`);
+            alert(`Saved ${savedCount} vocabulary pairs (${sourceLang} ↔ ${targetLang}) to your central vocabulary.`);
         } else {
             this.vocabularyStorage.saveCurrentLanguagePairVocab(AppState.config['langA-B']); // Still save to persist deletions
             alert('Vocabulary updated. Removed translations have been deleted.');
@@ -214,12 +214,12 @@ export class VocabularyBox {
         const promptKey = AppState.promptLang === languages[0] ? 'A' : 'B';
         const currentPrompt = currentExercise[promptKey];
 
-        const prompt = `Please correct this list of ${sourceLang} ? ${targetLang} vocabulary translations, focusing on the sentence "${currentPrompt}":
+        const prompt = `Please correct this list of ${sourceLang} → ${targetLang} vocabulary translations, focusing on the sentence "${currentPrompt}":
 
-${entries.map(entry => `${entry.source} ? ${entry.translation || '[missing]'}`).join('\n')}
+${entries.map(entry => `${entry.source} → ${entry.translation || '[missing]'}`).join('\n')}
 
 Only output the correct vocabulary list, in a copyable code block.
-Format as "expression ? translation1, translation2, ...", each on a separete line.
+Format as "expression → translation1, translation2, ...", each on a separete line.
 Add phrases, if the word-for-word translation is not accurate.
 You may add or remove lines.`;
 
@@ -246,6 +246,6 @@ You may add or remove lines.`;
         const translateUrl = `https://translate.google.com/?sl=${sourceLang}&tl=${targetLang}&text=${encodedPrompt}`;
         
         window.open(translateUrl, '_blank');
-        console.log(`Opened vocabulary (${sourceLang} ? ${targetLang}) with ${vocab.length} words`);
+        console.log(`Opened vocabulary (${sourceLang} → ${targetLang}) with ${vocab.length} words`);
     }
 }

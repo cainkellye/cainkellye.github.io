@@ -116,27 +116,44 @@ export class VocabularyStorage {
         const lang = currentLang || this.getCurrentLanguage();
         this._tempLanguagePair = languagePairArray || this.getLanguagePairArray();
 
-        const wordsFromPrompt = ArrayUtils.removeDuplicates(StringUtils.splitSentenceClean(prompt));
+        const wordsFromPrompt = StringUtils.splitSentenceClean(prompt);
+        const wordsFromPromptLower = wordsFromPrompt.map(w => w.toLowerCase());
         const vocabularyEntries = []; // Keeping the order of entries
-        
-        for (let word of wordsFromPrompt) {
-            word = word.toLowerCase();
-            const exactTranslations = this.lookupTranslation(word, lang, languagePairArray);
+
+        for (let i = 0; i < wordsFromPrompt.length; i++) {
+            console.log(`Processing word ${i + 1}/${wordsFromPrompt.length}: "${wordsFromPrompt[i]}"`);
+            const exactTranslations = this.lookupTranslation(wordsFromPromptLower[i], lang, languagePairArray);
             const strikedOut = exactTranslations === '---';
-            let relatedPhrases = this.findRelatedPhrases(word, lang, languagePairArray);
+            let relatedPhrases = this.findRelatedPhrases(wordsFromPromptLower[i], lang, languagePairArray);
             
             if (relatedPhrases.length > 0) {
-                const phrasesInPrompt = relatedPhrases.filter(phrase => prompt.toLowerCase().includes(phrase.toLowerCase()));
-                if (phrasesInPrompt.length > 0) {
-                    // If some related phrases are in the prompt, filter to only those
-                    relatedPhrases = phrasesInPrompt;
+                let longestMatchingPhraseWords = 0;
+                const longestMatchingPhrase = relatedPhrases.find(phrase => {
+                    const phraseWordsLower = StringUtils.splitSentenceLower(phrase);
+                    // Check if phrase words match the prompt words starting at index i
+                    let j = 0;
+                    for (; j < phraseWordsLower.length; j++) {
+                        if (wordsFromPrompt.length <= i + j || phraseWordsLower[j] !== wordsFromPromptLower[i + j]) {
+                            return false;
+                        }
+                    }
+                    longestMatchingPhraseWords = j;
+                    return true;
+                });
+
+                if (longestMatchingPhraseWords > 0) {
+                    console.log(`Phrase matching prompt for ${i + 1}. word "${wordsFromPrompt[i]}":`, longestMatchingPhrase);
+                    vocabularyEntries.push(longestMatchingPhrase);
+                    i += longestMatchingPhraseWords - 1; // Skip ahead in the prompt
+                    continue
                 } else {
+                    console.log(`No related phrases match prompt for ${i + 1}. word "${wordsFromPrompt[i]}"`);
                     // Add the word itself, as it appears in the prompt
                     if (!strikedOut) {
-                        vocabularyEntries.push(word);
+                        vocabularyEntries.push(wordsFromPrompt[i]);
                     }
 
-                    if (exactTranslations || word.length < 3) {
+                    if (exactTranslations || wordsFromPrompt[i].length < 3) {
                         // Skip if we have exact translations or if the word is too short
                         continue;
                     }
@@ -149,12 +166,12 @@ export class VocabularyStorage {
             } else {
                 // No related phrases found, add the word itself
                 if (!strikedOut) {
-                    vocabularyEntries.push(word);
+                    vocabularyEntries.push(wordsFromPrompt[i]);
                 }
 
                 if (strikedOut || !exactTranslations || exactTranslations.length === 0) {
                     // Fetch related entries based on chopped prefix
-                    const relatedEntriesByChop = this.findRelatedEntriesByChop(word, lang, languagePairArray);
+                    const relatedEntriesByChop = this.findRelatedEntriesByChop(wordsFromPromptLower[i], lang, languagePairArray);
 
                     // Add all related entries
                     for (const relatedEntry of relatedEntriesByChop) {
@@ -192,7 +209,7 @@ export class VocabularyStorage {
     findRelatedPhrases(word, currentLang, languagePairArray) {
         const pairVocab = this.getVocabularyData(languagePairArray);
         const [primaryLang, secondaryLang] = (languagePairArray || this.getLanguagePairArray()).sort();
-        const relatedPhrases = new Set();
+        const relatedPhrases = [];
         
         // Search for entries that contain the word as a standalone word
         for (const pair of pairVocab) {
@@ -204,19 +221,17 @@ export class VocabularyStorage {
             if (translation === '---') continue; // Skip striked out words
 
             if (this.containsStandaloneWord(entry, word)) {
-                relatedPhrases.add(entry);
-                console.log(`Found related phrase: "${entry}" for word "${word}"`);
+                relatedPhrases.push(entry);
             }
         }
 
-        console.log("Related phrases found:", relatedPhrases);
-        relatedPhrases.delete(word); // Remove the exact word itself if present
-        console.log("Removed exact match, remaining related phrases:", relatedPhrases);
-        return Array.from(relatedPhrases);
+        return relatedPhrases;
     }
     
     containsStandaloneWord(phrase, word) {
         const len = word.length;
+        if (len >= phrase.length) return false;
+
         phrase = phrase.toLowerCase();
         let index = phrase.indexOf(word);
 
@@ -250,13 +265,14 @@ export class VocabularyStorage {
         word = word.toLowerCase();
         const pairVocab = this.getVocabularyData(languagePairArray);
         const [primaryLang, secondaryLang] = (languagePairArray || this.getLanguagePairArray()).sort();
-        const relatedPhrases = new Set();
+        const relatedEntries = [];
 
         const qPrefix = word.length > 5 ? this.choppedPrefix(word) : word;
 
         for (const pair of pairVocab) {
             const [primaryWord, secondaryWord] = pair;
             const entry = currentLang === primaryLang ? primaryWord : secondaryWord;
+            if (entry.length < 4) { continue; } // Skip very short entries
             if (entry.indexOf(' ') !== -1) { continue; } // Skip multi-word phrases
             const translation = currentLang === primaryLang ? secondaryWord : primaryWord;
             if (translation === '---') continue; // Skip striked out words
@@ -268,13 +284,12 @@ export class VocabularyStorage {
             // Symmetric chopped-prefix match
             if (
                 (entry.toLowerCase().startsWith(qPrefix) || word.startsWith(wPrefix))) {
-                relatedPhrases.add(entry);
+                relatedEntries.push(entry);
                 console.log(`Found related entry by chop: "${entry}" for word "${word}"`);
             }
         }
 
-        relatedPhrases.delete(word); // Remove exact match
-        return Array.from(relatedPhrases);
+        return relatedEntries;
     }
  
     choppedPrefix(str) {

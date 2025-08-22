@@ -55,6 +55,10 @@ export const StringUtils = {
         return sentence.split(/\s+/).filter(Boolean);
     },
 
+    splitSentenceLower(sentence) {
+        return this.splitSentence(this.clean(sentence).toLowerCase());
+    },
+
     splitSentenceClean(sentence) {
         return this.splitSentence(this.removePunctuation(sentence));
     },

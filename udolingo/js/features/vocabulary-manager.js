@@ -6,7 +6,7 @@
 import { StorageManager } from '../utils/storage-manager.js';
 import { VocabularyRenderer } from '../utils/vocabulary-renderer.js';
 import { VocabularyStorage } from './vocabulary-storage.js';
-import { StringUtils, ArrayUtils } from '../utils/helpers.js';
+import { StringUtils, ArrayUtils, UIUtils } from '../utils/helpers.js';
 
 export class VocabularyManager {
     constructor() {
@@ -612,13 +612,13 @@ export class VocabularyManager {
 
         const compressedData = this.vocabularyData[this.currentLanguagePair];
         if (!compressedData) {
-            alert('No vocabulary data to export.');
+            UIUtils.showError('No vocabulary data to export.');
             return;
         }
 
         const vocabularyEntries = StorageManager.decompressData(compressedData) || [];
         if (vocabularyEntries.length === 0) {
-            alert('No vocabulary entries to export.');
+            UIUtils.showError('No vocabulary entries to export.');
             return;
         }
 
@@ -626,7 +626,7 @@ export class VocabularyManager {
         const groupedEntries = this.groupEntriesBySourceWord(vocabularyEntries);
         
         if (Object.keys(groupedEntries).length === 0) {
-            alert('No valid vocabulary entries to export.');
+            UIUtils.showError('No valid vocabulary entries to export.');
             return;
         }
 
@@ -696,7 +696,7 @@ export class VocabularyManager {
         const lines = content.split('\n').filter(line => line.trim());
         
         if (lines.length === 0) {
-            alert('No valid entries found in the file.');
+            UIUtils.showError('No valid entries found in the file.');
             return;
         }
 
@@ -710,7 +710,7 @@ export class VocabularyManager {
         if (firstLine.startsWith('Vocabulary:')) {
             const headerMatch = firstLine.match(/Vocabulary:\s*(\w+)\s*→\s*(\w+)/);
             if (!headerMatch) {
-                alert('Invalid header format. Expected format: "Vocabulary: sourceLang → targetLang"\n\nPlease add this header as the first line of your file.');
+                UIUtils.showError('Invalid header format. Expected format: "Vocabulary: sourceLang → targetLang"\n\nPlease add this header as the first line of your file.');
                 return;
             }
 
@@ -740,12 +740,12 @@ export class VocabularyManager {
             console.log(`Importing for pair: ${importPairKey}, direction: ${importDirection}`);
         } else {
             // No header found - show error
-            alert('Missing vocabulary header!\n\nPlease add a header line as the first line of your file in this format:\nVocabulary: sourceLang → targetLang\n\nExample: Vocabulary: en → hu');
+            UIUtils.showError('Missing vocabulary header!\n\nPlease add a header line as the first line of your file in this format:\nVocabulary: sourceLang → targetLang\n\nExample: Vocabulary: en → hu');
             return;
         }
 
         if (vocabularyLines.length === 0) {
-            alert('No vocabulary entries found after the header line.');
+            UIUtils.showError('No vocabulary entries found after the header line.');
             return;
         }
 
@@ -823,13 +823,13 @@ export class VocabularyManager {
             const [lang1, lang2] = importPairKey.split(':');
             const sourceLang = importDirection === 'normal' ? lang1 : lang2;
             const targetLang = importDirection === 'normal' ? lang2 : lang1;
-            
-            alert(`Successfully imported ${importedCount} new vocabulary entries for ${sourceLang} → ${targetLang}.`);
+
+            UIUtils.showSuccess(`Successfully imported ${importedCount} new vocabulary entries for ${sourceLang} → ${targetLang}.`);
             
             // Close sidebar on mobile after successful import
             this.closeSidebarOnMobile();
         } else {
-            alert('No new entries were imported. All entries may already exist.');
+            UIUtils.showError('No new entries were imported. All entries may already exist.');
         }
 
         this.hideImportModal();
@@ -837,14 +837,14 @@ export class VocabularyManager {
 
     saveVocabularyChanges() {
         if (!this.currentLanguagePair) {
-            alert('No language pair selected.');
+            UIUtils.showError('No language pair selected.');
             return;
         }
 
         const entries = VocabularyRenderer.getVocabularyInputs();
         
         if (entries.length === 0) {
-            alert('No vocabulary entries to save.');
+            UIUtils.showError('No vocabulary entries to save.');
             return;
         }
 
@@ -852,15 +852,38 @@ export class VocabularyManager {
         const sourceLang = this.currentDirection === 'normal' ? lang1 : lang2;
         const targetLang = this.currentDirection === 'normal' ? lang2 : lang1;
         
-        // Get existing entries
-        let compressedData = this.vocabularyData[this.currentLanguagePair];
-        let existingEntries = compressedData ? StorageManager.decompressData(compressedData) || [] : [];
+        // Check if we have a filter applied
+        const filterInput = document.getElementById('phrase-filter');
+        const hasActiveFilter = filterInput && filterInput.value.trim();
         
-        // Clear all existing entries for this language pair (we'll rebuild from the UI)
-        existingEntries = [];
-        
+        let existingEntries = [];
         let savedCount = 0;
 
+        if (hasActiveFilter) {
+            // Get existing entries
+            let compressedData = this.vocabularyData[this.currentLanguagePair];
+            existingEntries = compressedData ? StorageManager.decompressData(compressedData) || [] : [];
+            
+            // When filtering is active, preserve entries that are not currently displayed
+            const currentlyDisplayedSourceWords = new Set();
+            
+            // Collect all source words that are currently displayed in the UI
+            entries.forEach(entry => {
+                if (entry.source) {
+                    currentlyDisplayedSourceWords.add(entry.source.toLowerCase());
+                }
+            });
+            
+            // Remove entries that are currently displayed (filtered out)
+            existingEntries = existingEntries.filter(existingEntry => {
+                const [primary, secondary] = existingEntry;
+                const sourceWord = this.currentDirection === 'normal' ? primary : secondary;
+                
+                return !currentlyDisplayedSourceWords.has(sourceWord.toLowerCase());
+            });
+        }
+        
+        // Process entries from the UI
         entries.forEach(entry => {
             const { source, translation } = entry;
             
@@ -896,13 +919,21 @@ export class VocabularyManager {
         this.vocabularyData[this.currentLanguagePair] = StorageManager.compressData(existingEntries);
         StorageManager.setCentralVocabulary(this.vocabularyData);
         
+        // Update our internal reference to all entries
+        this.allVocabularyEntries = existingEntries;
+        
         // Refresh display
-        this.loadLanguagePairVocabulary();
+        if (hasActiveFilter) {
+            // Re-apply the current filter
+            this.filterVocabulary(filterInput.value);
+        } else {
+            this.loadLanguagePairVocabulary();
+        }
         
         if (savedCount > 0) {
-            alert(`Saved ${savedCount} vocabulary entries for ${sourceLang} → ${targetLang}.`);
+            UIUtils.showSuccess(`Saved or updated ${savedCount} vocabulary entries for ${sourceLang} → ${targetLang}.`);
         } else {
-            alert('All entries have been removed (empty translations delete entries).');
+            UIUtils.showSuccess('Displayed entries have been removed (empty translations delete entries).');
         }
     }
 

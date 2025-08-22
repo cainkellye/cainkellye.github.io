@@ -5,7 +5,7 @@
 
 import { AppState } from '../core/state.js';
 import { DOM } from '../core/dom.js';
-import { ClipboardUtils } from '../utils/helpers.js';
+import { ClipboardUtils, UIUtils } from '../utils/helpers.js';
 import { VocabularyRenderer } from '../utils/vocabulary-renderer.js';
 import { VocabularyStorage } from './vocabulary-storage.js';
 
@@ -83,14 +83,14 @@ export class VocabularyBox {
         try {
             const clipboardText = await ClipboardUtils.readText();
             if (!clipboardText) {
-                alert('No text found in clipboard.');
+                UIUtils.showError('No text found in clipboard.');
                 return;
             }
 
             this.parseAndLoadVocabulary(clipboardText);
         } catch (error) {
             console.error('Error loading vocabulary from clipboard:', error);
-            alert('Error reading from clipboard. Please try again.');
+            UIUtils.showError('Error reading from clipboard. Please try again.');
         }
     }
 
@@ -148,7 +148,7 @@ export class VocabularyBox {
 
     saveVocabulary() {
         if (!AppState.config || !AppState.config['langA-B']) {
-            alert('No language configuration available.');
+            UIUtils.showError('No language configuration available.');
             return;
         }
 
@@ -191,10 +191,10 @@ export class VocabularyBox {
 
         if (savedCount > 0) {
             this.vocabularyStorage.saveCurrentLanguagePairVocab(AppState.config['langA-B']);
-            alert(`Saved ${savedCount} vocabulary pairs (${sourceLang} ↔ ${targetLang}) to your central vocabulary.`);
+            UIUtils.showSuccess(`Saved or updated ${savedCount} vocabulary pairs (${sourceLang} ↔ ${targetLang}) to your central vocabulary.`);
         } else {
             this.vocabularyStorage.saveCurrentLanguagePairVocab(AppState.config['langA-B']); // Still save to persist deletions
-            alert('Vocabulary updated. Removed translations have been deleted.');
+            UIUtils.showSuccess('Vocabulary updated. Removed translations have been deleted.');
         }
     }
 
@@ -202,7 +202,7 @@ export class VocabularyBox {
         const entries = VocabularyRenderer.getVocabularyInputs();
 
         if (entries.length === 0) {
-            alert('No vocabulary words to verify.');
+            UIUtils.showError('No vocabulary words to verify.');
             return;
         }
 
@@ -238,7 +238,7 @@ You may add or remove lines.`;
         vocab.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
         
         if (vocab.length === 0) {
-            alert('No vocabulary words found for this lesson.');
+            UIUtils.showError('No vocabulary words found for this lesson.');
             return;
         }
 

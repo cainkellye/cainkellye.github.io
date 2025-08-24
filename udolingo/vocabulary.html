@@ -35,9 +35,9 @@
                 </div>
 
                 <div class="sidebar-section">
+                    <button id="import-vocab-btn">Import Vocabulary</button>
                     <button id="export-vocab-btn" disabled>Export Vocabulary</button>
                     <input type="file" id="import-file-input" accept=".txt,.csv" style="display: none;">
-                    <button id="import-vocab-btn">Import from File</button>
                 </div>
             </div>
         </div>
@@ -81,14 +81,20 @@
     <div id="import-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
             <h3>Import Vocabulary</h3>
-            <p>File format should start with a header line: <code>Vocabulary: sourceLang → targetLang</code></p>
-            <p>Followed by vocabulary entries: <code>expression → translation1, translation2, ...</code></p>
-            <p>Each entry on a separate line. Supported separators: →, ->, |, tab, :, =</p>
+            <div style="font-size: 0.9rem; margin-left: 15px;">
+                Import format should start with a header line:
+                <pre style="margin-block-start: 0px;">    Vocabulary: sourceLang → targetLang</pre>
+                Followed by vocabulary entries:
+                <pre style="margin-block-start: 0px;">    expression → translation1, translation2, ...</pre>
+                Each entry on a separate line. Supported separators:
+                <pre style="margin-block-start: 0px; margin-block-end: 0px;">    →, ->, |, tab, :, = </pre>
+            </div>
             
-            <textarea id="import-preview" rows="10" style="width: 100%; margin: 1rem 0; font-family: monospace; font-size: 0.9rem;"></textarea>
+            <textarea id="import-preview" rows="10" style="width: 100%; height: 200px; margin: 1rem 0; font-family: monospace; font-size: 0.9rem; resize: vertical;"></textarea>
             
             <div class="modal-buttons">
                 <button id="confirm-import-btn">Import</button>
+                <button id="browse-file-btn">Browse File</button>
                 <button id="cancel-import-btn">Cancel</button>
             </div>
         </div>

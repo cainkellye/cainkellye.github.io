@@ -822,7 +822,6 @@ button:disabled {
 
     /* Mobile vocabulary styles */
     .vocab-grid {
-        grid-template-columns: 1fr;
         gap: 0.3rem;
         max-height: 600px;
         padding: unset;

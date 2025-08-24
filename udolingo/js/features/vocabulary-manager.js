@@ -166,8 +166,14 @@ export class VocabularyManager {
             this.closeSidebarOnMobile();
         });
 
-        // Import button
+        // Import vocabulary button (opens modal)
         document.getElementById('import-vocab-btn').addEventListener('click', () => {
+            this.showImportModal('');
+            this.closeSidebarOnMobile();
+        });
+
+        // Browse file button in modal
+        document.getElementById('browse-file-btn').addEventListener('click', () => {
             document.getElementById('import-file-input').click();
         });
 
@@ -678,12 +684,20 @@ export class VocabularyManager {
         reader.readAsText(file);
     }
 
-    showImportModal(content) {
+    showImportModal(content = '') {
         const modal = document.getElementById('import-modal');
         const preview = document.getElementById('import-preview');
         
         preview.value = content;
         modal.style.display = 'flex';
+        
+        // Focus on textarea and place cursor at the end if there's content
+        setTimeout(() => {
+            preview.focus();
+            if (content) {
+                preview.setSelectionRange(preview.value.length, preview.value.length);
+            }
+        }, 100);
     }
 
     hideImportModal() {

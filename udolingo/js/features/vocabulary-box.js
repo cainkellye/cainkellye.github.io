@@ -172,6 +172,7 @@ export class VocabularyBox {
             // Then add the new translations (if any)
             if (translation) {
                 const translations = translation
+                    .replace("~~~", "---") // Allow ~~~ to delete words too
                     .split(',')
                     .map(t => t.trim())
                     .filter(t => t.length > 0);

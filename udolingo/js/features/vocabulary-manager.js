@@ -771,6 +771,7 @@ export class VocabularyManager {
             if (source && translationsText) {
                 // Split multiple translations by comma
                 const translations = translationsText
+                    .replace("~~~", "---") // Allow ~~~ to delete words too
                     .split(',')
                     .map(t => t.trim())
                     .filter(t => t.length > 0);
@@ -891,6 +892,7 @@ export class VocabularyManager {
                 if (translation) {
                     // Split multiple translations by comma
                     const translations = translation
+                        .replace("~~~", "---") // Allow ~~~ to delete words too
                         .split(',')
                         .map(t => t.trim())
                         .filter(t => t.length > 0);

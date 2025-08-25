@@ -30,7 +30,7 @@ export class ExerciseManager {
                 promptLang: languages[0],
                 solutionLang: languages[1],
                 solutionWords: StringUtils.splitSentenceClean(exercise.B),
-                noiseWords: this.parseNoiseWords(exercise.noiseB || this.generateNoise('B', 5, exercise.B))
+                noiseWords: this.parseNoiseWords(exercise.noiseB || this.generateNoise('B', exercise.B))
             };
         } else {
             return {
@@ -39,7 +39,7 @@ export class ExerciseManager {
                 promptLang: languages[1],
                 solutionLang: languages[0],
                 solutionWords: StringUtils.splitSentenceClean(exercise.A),
-                noiseWords: this.parseNoiseWords(exercise.noiseA || this.generateNoise('A', 5, exercise.A))
+                noiseWords: this.parseNoiseWords(exercise.noiseA || this.generateNoise('A', exercise.A))
             };
         }
     }
@@ -49,11 +49,14 @@ export class ExerciseManager {
         return StringUtils.splitSentenceClean(noiseString);
     }
 
-    generateNoise(lang, count, solution) {
+    generateNoise(lang, solution) {
         const words = AppState.vocab[lang];
 
         const solutionWords = StringUtils.splitSentenceClean(solution).map(w => w.toLowerCase());
         const filteredWords = words.filter(word => !solutionWords.includes(word.toLowerCase()));
+
+        // Random count between 4 and 7, but not more than available words
+        const count = Math.min(Math.floor(Math.random() * 4) + 4, filteredWords.length);
 
         ArrayUtils.shuffle(filteredWords);
         return ArrayUtils.removeDuplicates(filteredWords, false).slice(0, count).join(' ');

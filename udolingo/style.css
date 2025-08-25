@@ -447,14 +447,19 @@ button:disabled {
     align-items: center;
     padding: 0.5rem;
     margin-bottom: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 5px;
+    border: 1px solid #bbb;
+    border-radius: 8px;
     background-color: #f9f9f9;
 }
 
 .lesson-info {
     flex: 1;
     text-align: left;
+}
+
+.lesson-actions {
+    display: inline-flex;
+    flex-direction: row;
 }
 
 .main-title {
@@ -799,6 +804,16 @@ button:disabled {
 
     body {
         overflow: auto;
+    }
+
+    .lesson-actions {
+        display: inline-flex;
+        flex-direction: column;
+        gap: 0.3rem;
+    }
+
+    .lesson-actions button {
+        margin: 0px;
     }
     
     /* LLM Prompt Generator responsive styles */

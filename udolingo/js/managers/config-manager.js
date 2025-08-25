@@ -48,7 +48,6 @@ export class ConfigManager {
             exerciseManager.loadExercise(0);
 
             // Update UI
-            this.uiManager.updateVocabButtons(configData['langA-B']);
             this.uiManager.updateControlButtons();
             this.uiManager.updateTitle(configData.title);
 

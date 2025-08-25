@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Udolingo</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" type="image/png" href="udolingo-icon.png">
+    <link rel="icon" type="image/png" href="udolingo-icon.png" sizes="any">
+    <link rel="mask-icon" href="{{ base_path }}udolingo-icon.png" color="#000000">
 </head>
 <body>
     <div class="app-container">
@@ -20,16 +21,14 @@
             <div class="sidebar-content" id="sidebar-content">
                 <div class="sidebar-section">
                     <button id="open-config-panel-btn">Load Lesson</button>
-                    <button id="shuffle-exercises-btn" disabled>Shuffle Exercises</button>
                     <button id="save-current-btn" disabled>Save Current</button>
                     <button id="share-btn" disabled>Share Current</button>
+                    <button id="shuffle-exercises-btn" disabled>Shuffle Exercises</button>
                 </div>
                 
                 <div class="sidebar-section">
                     <button id="mistakes-btn" disabled>My Mistakes</button>
                     <button onclick="window.open('vocabulary.html', '_blank')" title="Open vocabulary manager">Vocabulary Manager</button>
-                    <button id="vocab1-btn" title="Open vocabulary" style="display: none">a → b 📖</button>
-                    <button id="vocab2-btn" title="Open vocabulary" style="display: none">b → a 📖</button>
                 </div>
 
                 <div class="sidebar-section">
@@ -157,7 +156,7 @@
             <div class="llm-config-grid">
                 <!-- Language A Selection -->
                 <div class="config-group">
-                    <label for="langA-select">Source Language:</label>
+                    <label for="langA-dropdown">Source Language:</label>
                     <div class="custom-dropdown" id="langA-dropdown">
                         <input type="text" id="langA-input" placeholder="Type or select..." value="English" readonly>
                         <div class="dropdown-arrow">▼</div>
@@ -167,7 +166,7 @@
 
                 <!-- Language B Selection -->
                 <div class="config-group">
-                    <label for="langB-select">Target Language:</label>
+                    <label for="langB-dropdown">Target Language:</label>
                     <div class="custom-dropdown" id="langB-dropdown">
                         <input type="text" id="langB-input" placeholder="Type or select..." value="Spanish" readonly>
                         <div class="dropdown-arrow">▼</div>
@@ -226,7 +225,7 @@
                             <input type="radio" name="noise" value="high"> High (5-6 words)
                         </label>
                         <label class="radio-label" title="Random words from the exercises">
-                            <input type="radio" name="noise" value="auto"> Generated (5 words)
+                            <input type="radio" name="noise" value="auto"> Generated (4-7 words)
                         </label>
                     </div>
                 </div>

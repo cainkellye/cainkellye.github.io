@@ -390,14 +390,14 @@
                 <div class="feature-grid">
                     <div class="feature-item">
                         <h4>🤖 AI Integration</h4>
-                        <p>Use any LLM (ChatGPT, Claude, Gemini) to generate personalized lessons with our built-in prompt generator.</p>
+                        <p>Use any LLM (ChatGPT, Claude, Gemini) to generate personalized lessons with our built-in prompt generator. Practice with topics that interest you: travel, business, movies, books, or any subject you choose.</p>
                     </div>
                     <div class="feature-item">
-                        <h4>🎨 Custom Themes</h4>
-                        <p>Practice with topics that interest you: travel, business, movies, books, or any subject you choose.</p>
+                        <h4>📔 Advanced Vocabulary</h4>
+                        <p>Save words and phrases you learn. Use the Vocabulary Manager to review them and use the smart filter to help you translate sentences!</p>
                     </div>
                     <div class="feature-item">
-                        <h4>📱 Bidirectional Learning</h4>
+                        <h4>🔁 Bidirectional Learning</h4>
                         <p>Translation directions (A→B and B→A) are randomized. When the lesson starts over, they will be swapped!</p>
                     </div>
                     <div class="feature-item">
@@ -435,11 +435,6 @@
                             <td>Always</td>
                         </tr>
                         <tr>
-                            <td><strong>Shuffle Exercises</strong></td>
-                            <td>Randomize the order of exercises in current lesson</td>
-                            <td>When lesson is loaded</td>
-                        </tr>
-                        <tr>
                             <td><strong>Save Current</strong></td>
                             <td>Save the current lesson to local storage</td>
                             <td>When lesson is loaded</td>
@@ -447,6 +442,11 @@
                         <tr>
                             <td><strong>Share Current</strong></td>
                             <td>Generate a shareable URL for the current lesson</td>
+                            <td>When lesson is loaded</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Shuffle Exercises</strong></td>
+                            <td>Randomize the order of exercises in current lesson</td>
                             <td>When lesson is loaded</td>
                         </tr>
                     </tbody>
@@ -468,14 +468,9 @@
                             <td>View all mistakes and generate AI prompts for help</td>
                         </tr>
                         <tr>
-                            <td><strong>a → b 📖</strong></td>
-                            <td>Vocabulary list (Language A to B)</td>
-                            <td>Opens Google Translate with the list of words from the lesson</td>
-                        </tr>
-                        <tr>
-                            <td><strong>b → a 📖</strong></td>
-                            <td>Vocabulary list (Language B to A)</td>
-                            <td>Opens Google Translate with the list of words from the lesson</td>
+                            <td><strong>Vocabulary Manager</strong></td>
+                            <td>Manage your vocabulary</td>
+                            <td>Access the central vocabulary manager to view, edit, import, and export your word collections</td>
                         </tr>
                     </tbody>
                 </table>
@@ -507,6 +502,10 @@
                         </tr>
                     </tbody>
                 </table>
+
+                <div class="tip">
+                    <strong>💡 Tip:</strong> The Load Lesson dialog also supports share links directly. Just paste the URL and it will load the lesson automatically!
+                </div>
             </div>
 
             <!-- Exercise Types -->
@@ -526,33 +525,56 @@
                     <li><strong>Google Translate:</strong> Open the current prompt in Google Translate</li>
                 </ul>
 
-                <div class="warning" style="display: none">
-                    <strong>⚠️ Note:</strong> Exercises are scored based on exact matches. Make sure to use proper capitalization and punctuation as shown in the lesson.
-                </div>
+                <br/>
+                <h3>Vocabulary Box</h3>
+                <p>Below each exercise, you'll find a vocabulary box that automatically extracts words and phrases from the current exercise:</p>
+                <ul>
+                    <li><strong>Auto-Detection:</strong> Words from the prompt are automatically extracted and shown</li>
+                    <li><strong>Smart Lookup:</strong> Existing translations from your vocabulary are automatically displayed</li>
+                    <li><strong>Editable:</strong> Add or modify translations for any word or phrase</li>
+                    <li><strong>Expandable:</strong> Add new vocabulary entries beyond what's in the current exercise</li>
+                    <li><strong>Save Function:</strong> Save all vocabulary to your central collection for future use</li>
+                    <li><strong>AI Verification:</strong> Use "Verify with LLM" to check translations with AI assistance</li>
+                </ul>
             </div>
 
-            <!-- Pre-defined Lessons -->
+            <!-- Vocabulary Manager -->
             <div class="content-card">
-                <h2 class="section-title">📖 Pre-defined Language Lessons</h2>
-                <p>Ready-to-use lessons created by the community and educators. Click any link below to instantly load a lesson:</p>
+                <h2 class="section-title">📚 Vocabulary Manager</h2>
+                <p>Access your centralized vocabulary management system to organize and maintain your word collections across all language pairs.</p>
                 
-                <div class="lesson-placeholder">
-                    <h4>🚧 Coming Soon!</h4>
-                    <p>Pre-defined lesson links will be added here. These will include beginner to advanced lessons for popular language pairs and topics.</p>
-                    <br>
-                    <p><em>Examples that will be available:</em></p>
-                    <ul style="text-align: left; display: inline-block; margin-top: 1rem;">
-                        <li>Spanish for Travelers - Beginner</li>
-                        <li>Business English - Intermediate</li>
-                        <li>French Cuisine Vocabulary - Intermediate</li>
-                        <li>German Grammar Essentials - Advanced</li>
-                        <li>Japanese Polite Expressions - Beginner</li>
-                    </ul>
+                <h3>Key Features</h3>
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <h4>🔍 Smart Filter</h4>
+                        <p>Enter words, phrases, or entire sentences to filter your vocabulary. Even unsaved words will appear with empty translation fields, helping with translations outside lessons.</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4>📊 Language Pair Organization</h4>
+                        <p>Manage separate vocabulary collections for each language pair you're learning.</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4>🔄 Direction Switching</h4>
+                        <p>Switch between source→target and target→source directions for comprehensive learning.</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4>💾 Import/Export</h4>
+                        <p>Export your vocabulary to files and import them on other devices for seamless learning continuity.</p>
+                    </div>
                 </div>
-                
+
                 <div class="tip">
-                    <strong>💡 Want to contribute?</strong> Create your own lessons and share them with the community via GitHub. High-quality lessons may be featured here!
+                    <strong>💡 Smart Filter Tip:</strong> The filter can be used to input a sentence and see all relevant words beneath in correct order, even if they're not yet saved. This intentionally helps with translations outside the lessons - just type your sentence and see which words you have translations for!
                 </div>
+
+                <h3>Managing Your Vocabulary</h3>
+                <ul>
+                    <li><strong>Create:</strong> Start building vocabulary using the vocabulary box under exercises</li>
+                    <li><strong>Edit:</strong> Modify existing entries, add multiple translations, or remove unwanted entries</li>
+                    <li><strong>Organize:</strong> Switch between different language pairs and translation directions</li>
+                    <li><strong>Share:</strong> Export vocabulary to files that can be imported on other devices</li>
+                    <li><strong>Search:</strong> Use the filter to quickly find specific words or see vocabulary for entire sentences</li>
+                </ul>
             </div>
 
             <!-- Advanced Tips -->
@@ -571,8 +593,11 @@
                 <ul>
                     <li><strong>Regular Sessions:</strong> Practice little and often rather than long, infrequent sessions</li>
                     <li><strong>Review Mistakes:</strong> Use the "My Mistakes" feature to identify patterns in your errors</li>
+                    <li><strong>Build Vocabulary:</strong> Use the vocabulary box under exercises to build your personal dictionary</li>
+                    <li><strong>Use the Filter:</strong> In the Vocabulary Manager, use the filter to practice translations of full sentences</li>
                     <li><strong>Mix Topics:</strong> Alternate between different subjects to maintain interest</li>
                     <li><strong>Both Directions:</strong> Practice translation in both directions, by cycling though the lessons again, for better retention</li>
+                    <li><strong>Export/Import:</strong> Keep your vocabulary synced across devices using the export/import features</li>
                 </ul>
                 <br />
                 <h3>Sharing and Collaboration</h3>

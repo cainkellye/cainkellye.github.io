@@ -24,8 +24,6 @@ export class DOMElements {
             
             // Control buttons
             shuffle: this.getElement('shuffle-exercises-btn'),
-            vocab1: this.getElement('vocab1-btn'),
-            vocab2: this.getElement('vocab2-btn'),
             mistakes: this.getElement('mistakes-btn'),
             saveCurrent: this.getElement('save-current-btn'),
             share: this.getElement('share-btn'),

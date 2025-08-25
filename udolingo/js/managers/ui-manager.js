@@ -49,7 +49,7 @@ export class UIManager {
     setButtonsDisabled(disabled) {
         const buttonIds = [
             'submit', 'clear', 'next', 'shuffle', 'translate',
-            'vocab1', 'vocab2', 'mistakes', 'saveCurrent', 'share'
+            'mistakes', 'saveCurrent', 'share'
         ];
         
         buttonIds.forEach(id => {
@@ -71,14 +71,6 @@ export class UIManager {
 
     clearWordBank() {
         DOM.clear('wordBankContainer');
-    }
-
-    updateVocabButtons(langAB) {
-        if (!langAB || langAB.length < 2) return;
-        DOM.setHTML('vocab1', `${langAB[0]} → ${langAB[1]} 📖`);
-        DOM.setHTML('vocab2', `${langAB[1]} → ${langAB[0]} 📖`);
-        DOM.setVisible('vocab1', true);
-        DOM.setVisible('vocab2', true);
     }
 
     initializeVocabularyBox() {
@@ -409,9 +401,5 @@ export class UIManager {
 
     updateUI() {
         this.updateControlButtons();
-        
-        if (AppState.config) {
-            this.updateVocabButtons(AppState.config['langA-B']);
-        }
     }
 }

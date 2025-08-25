@@ -112,20 +112,6 @@ export class EventManager {
         DOM.addEventListener('translate', 'click', () => {
             this.translationManager.openTranslation();
         });
-
-        DOM.addEventListener('vocab1', 'click', () => {
-            if (AppState.config && AppState.config['langA-B']) {
-                const [langA, langB] = AppState.config['langA-B'];
-                this.vocabularyBox.openVocabularyTranslation(langA, langB);
-            }
-        });
-
-        DOM.addEventListener('vocab2', 'click', () => {
-            if (AppState.config && AppState.config['langA-B']) {
-                const [langA, langB] = AppState.config['langA-B'];
-                this.vocabularyBox.openVocabularyTranslation(langB, langA);
-            }
-        });
     }
 
     /**

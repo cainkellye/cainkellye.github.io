@@ -170,7 +170,7 @@ export class EventManager {
         DOM.addEventListener('cancelConfig', 'click', () => {
             this.uiManager.hideConfigModal();
             DOM.setContent('configInput', '');
-            this.uiManager.showSaveButton(null);
+            this.uiManager.showSaveButton(false);
         });
 
         DOM.addEventListener('cancelSaved', 'click', () => {
@@ -192,13 +192,13 @@ export class EventManager {
                 const configText = configInput.value.trim();
                 if (configText) {
                     try {
-                        const configData = JSON.parse(configText);
-                        this.uiManager.showSaveButton(configData);
+                        const isValid = this.configManager.checkConfigToLoad(configText);
+                        this.uiManager.showSaveButton(isValid);
                     } catch (error) {
-                        this.uiManager.showSaveButton(null);
+                        this.uiManager.showSaveButton(false);
                     }
                 } else {
-                    this.uiManager.showSaveButton(null);
+                    this.uiManager.showSaveButton(false);
                 }
             });
         }

@@ -65,6 +65,10 @@ export class ConfigManager {
         }
     }
 
+    /**
+     * Load configuration from text input
+     * Supports both JSON configuration and share URLs with base64 encoded lessons
+     */
     loadFromText() {
         const configInput = DOM.get('configInput');
         if (!configInput) {
@@ -79,10 +83,26 @@ export class ConfigManager {
         }
 
         try {
-            const newConfig = JSON.parse(configText);
+            let newConfig = null;
+            // Check if the input is a share URL
+            if (this.urlHandler.isShareURL(configText)) {
+                console.log('Detected share URL, extracting configuration...');
+                newConfig = this.urlHandler.extractConfigFromURL(configText);
+            } else {
+                // Try to parse as JSON
+                newConfig = JSON.parse(configText);
+                if (!ValidationUtils.isValidLessonConfig(newConfig)) {
+                    throw new Error('Invalid lesson format');
+                }
+            }
+
             this._processSuccessfulLoad(newConfig, configInput);
         } catch (error) {
-            alert(`Error parsing JSON: ${error.message}`);
+            if (this.urlHandler.isShareURL(configText)) {
+                alert(`Error loading lesson from URL: ${error.message}`);
+            } else {
+                alert(`Error parsing JSON: ${error.message}`);
+            }
         }
     }
 
@@ -97,20 +117,55 @@ export class ConfigManager {
         }
     }
 
+    /**
+     * Load configuration from clipboard
+     * Supports both JSON configuration and share URLs with base64 encoded lessons
+     */
     async loadConfigFromClipboard() {
         try {
             const clipboard = await ClipboardUtils.readText();
-            const newConfig = JSON.parse(clipboard);
             
-            if (!ValidationUtils.isValidLessonConfig(newConfig)) {
-                throw new Error('Invalid lesson format');
+            let newConfig = null;
+            // Check if the clipboard contains a share URL
+            if (this.urlHandler.isShareURL(clipboard)) {
+                console.log('Detected share URL in clipboard, extracting configuration...');
+                newConfig = this.urlHandler.extractConfigFromURL(clipboard);
+            } else {
+                // Try to parse as JSON
+                newConfig = JSON.parse(clipboard);
+                if (!ValidationUtils.isValidLessonConfig(newConfig)) {
+                    throw new Error('Invalid lesson format');
+                }
             }
-
-            console.log(`Load from clipboard. Config title: ${newConfig.title}`);
+            
             this._processSuccessfulLoad(newConfig);
         } catch (error) {
-            console.error('Clipboard load failed:', error);
-            alert("The clipboard does not contain a valid Udolingo lesson.");
+            console.error('Loading lesson from clipboard load failed:', error);
+            
+            // Check if it was a URL that failed to load
+            try {
+                const clipboard = await ClipboardUtils.readText();
+                if (this.urlHandler.isShareURL(clipboard)) {
+                    alert("Failed to load lesson from the URL in clipboard.");
+                } else {
+                    alert("The clipboard does not contain a valid Udolingo lesson.");
+                }
+            } catch {
+                alert("The clipboard does not contain a valid Udolingo lesson.");
+            }
+        }
+    }
+
+    checkConfigToLoad(configText) {
+        if (this.urlHandler.isShareURL(configText)) {
+            return true;
+        } else {
+            try {
+                const config = JSON.parse(configText);
+                return ValidationUtils.isValidLessonConfig(config);
+            } catch {
+                return false;
+            }
         }
     }
 

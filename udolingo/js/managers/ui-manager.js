@@ -403,8 +403,7 @@ export class UIManager {
     /**
      * Show save button when valid config is detected
      */
-    showSaveButton(configData) {
-        const isValid = configData && configData.exercises && configData.exercises.length > 0;
+    showSaveButton(isValid) {
         DOM.setEnabled('loadSaveConfig', isValid);
     }
 

@@ -11,17 +11,11 @@ export class URLHandler {
         this.configParam = 'c';
     }
 
-    /**
-     * Get query parameter value
-     */
     getQueryParam(name) {
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.get(name);
     }
 
-    /**
-     * Load configuration from URL parameter
-     */
     loadConfigFromURL() {
         const compressedConfig = this.getQueryParam(this.configParam);
         if (!compressedConfig) {
@@ -56,9 +50,6 @@ export class URLHandler {
         }
     }
 
-    /**
-     * Remove the config parameter from the current URL
-     */
     removeConfigParam() {
         try {
             const url = new URL(window.location.href);
@@ -73,9 +64,6 @@ export class URLHandler {
         }
     }
 
-    /**
-     * Generate shareable URL for configuration
-     */
     generateShareURL(config) {
         if (!config) {
             throw new Error('No configuration provided');
@@ -104,9 +92,6 @@ export class URLHandler {
         }
     }
 
-    /**
-     * Parse and validate URL
-     */
     parseURL(url) {
         try {
             return new URL(url);
@@ -115,16 +100,10 @@ export class URLHandler {
         }
     }
 
-    /**
-     * Check if current page was loaded with a config parameter
-     */
     hasConfigParam() {
         return this.getQueryParam(this.configParam) !== null;
     }
 
-    /**
-     * Get all query parameters as object
-     */
     getAllParams() {
         const params = {};
         const urlParams = new URLSearchParams(window.location.search);
@@ -134,9 +113,6 @@ export class URLHandler {
         return params;
     }
 
-    /**
-     * Update URL with new parameters without page reload
-     */
     updateURL(params, replaceState = true) {
         try {
             const url = new URL(window.location.href);
@@ -161,6 +137,41 @@ export class URLHandler {
         } catch (error) {
             console.error('Error updating URL:', error);
             return null;
+        }
+    }
+
+    extractConfigFromURL(urlString) {
+        try {
+            const url = new URL(urlString);
+            const compressedConfig = url.searchParams.get(this.configParam);
+            
+            if (!compressedConfig) {
+                return null;
+            }
+
+            const decompressed = LZString.decompressFromEncodedURIComponent(compressedConfig);
+            if (!decompressed) {
+                throw new Error('Failed to decompress URL config');
+            }
+
+            const config = JSON.parse(decompressed);
+            if (!ValidationUtils.isValidLessonConfig(config)) {
+                throw new Error('Invalid lesson config in URL');
+            }
+
+            return config;
+        } catch (error) {
+            console.error('Error extracting config from URL:', error);
+            throw error;
+        }
+    }
+
+    isShareURL(urlString) {
+        try {
+            const url = new URL(urlString);
+            return url.searchParams.has(this.configParam);
+        } catch {
+            return false;
         }
     }
 }

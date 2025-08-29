@@ -127,24 +127,28 @@ export class VocabularyStorage {
             let relatedPhrases = this.findRelatedPhrases(wordsFromPromptLower[i], lang, languagePairArray);
             
             if (relatedPhrases.length > 0) {
-                let longestMatchingPhraseWords = 0;
+                // sort related phrases by length descending
+                relatedPhrases.sort((a, b) => b.length - a.length);
+                let mostMatchingPhraseWords = 0;
                 const longestMatchingPhrase = relatedPhrases.find(phrase => {
                     const phraseWordsLower = StringUtils.splitSentenceLower(phrase);
                     // Check if phrase words match the prompt words starting at index i
                     let j = 0;
                     for (; j < phraseWordsLower.length; j++) {
-                        if (wordsFromPrompt.length <= i + j || phraseWordsLower[j] !== wordsFromPromptLower[i + j]) {
+                        if (wordsFromPrompt.length <= i + j
+                            || (j == 0 && wordsFromPromptLower[i + j] !== phraseWordsLower[j])
+                            || !wordsFromPromptLower[i + j].startsWith(phraseWordsLower[j])) {
                             return false;
                         }
                     }
-                    longestMatchingPhraseWords = j;
+                    mostMatchingPhraseWords = j;
                     return true;
                 });
 
-                if (longestMatchingPhraseWords > 0) {
+                if (mostMatchingPhraseWords > 0) {
                     console.log(`Phrase matching prompt for ${i + 1}. word "${wordsFromPrompt[i]}":`, longestMatchingPhrase);
                     vocabularyEntries.push(longestMatchingPhrase);
-                    i += longestMatchingPhraseWords - 1; // Skip ahead in the prompt
+                    i += mostMatchingPhraseWords - 1; // Skip ahead in the prompt
                     continue
                 } else {
                     console.log(`No related phrases match prompt for ${i + 1}. word "${wordsFromPrompt[i]}"`);

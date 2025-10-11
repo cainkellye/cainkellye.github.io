@@ -38,7 +38,7 @@ export const ArrayUtils = {
 
 export const StringUtils = {
     removePunctuation(sentence) {
-        return this.clean(sentence).replace(/[.,!?¿¡—–\()"]/g, '');
+        return this.clean(sentence).replace(/[.,!?¿¡—–\()"]/g, '').replace(/ +/g, ' ');
     },
 
     clean(sentence) {
